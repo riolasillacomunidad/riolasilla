@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parque Río La Silla — Red Comunitaria</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <span class="logo">🌿 Río La Silla</span>
+    <span class="subtitle">Red Comunitaria</span>
+  </div>
+  <div class="header-right">
+    <div id="user-info" class="hidden">
+      <img id="user-avatar" src="" alt="" class="avatar" />
+      <span id="user-name"></span>
+      <button onclick="signOut()" class="btn-small">Salir</button>
+    </div>
+    <button id="btn-login" onclick="signInGoogle()" class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Entrar con Google
+    </button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="filters">
+      <p class="section-label">Filtrar por categoría</p>
+      <div class="cat-filters">
+        <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">Todos</button>
+        <button class="cat-btn" data-cat="flora" onclick="filterCat('flora')">🌿 Flora/fauna</button>
+        <button class="cat-btn" data-cat="reporte" onclick="filterCat('reporte')">⚠️ Reportes</button>
+        <button class="cat-btn" data-cat="aviso" onclick="filterCat('aviso')">📢 Avisos</button>
+        <button class="cat-btn" data-cat="evento" onclick="filterCat('evento')">📅 Eventos</button>
+      </div>
+    </div>
+
+    <div id="feed" class="feed">
+      <p class="empty-msg">Cargando publicaciones...</p>
+    </div>
+  </aside>
+
+  <!-- MAP -->
+  <main class="map-container">
+    <div id="map"></div>
+    <div class="map-hint" id="map-hint">
+      <span id="hint-text">Inicia sesión para publicar</span>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: Nueva publicación -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Nueva publicación</h2>
+      <button onclick="closeModalBtn()" class="btn-close">✕</button>
+    </div>
+    <p class="modal-coords" id="modal-coords"></p>
+    <select id="pub-cat" class="input-full">
+      <option value="flora">🌿 Flora / fauna</option>
+      <option value="reporte">⚠️ Reporte de daño</option>
+      <option value="aviso">📢 Aviso comunitario</option>
+      <option value="evento">📅 Evento</option>
+    </select>
+    <textarea id="pub-text" class="input-full" rows="4" placeholder="Describe lo que observas, reporta un daño, anuncia un evento..."></textarea>
+    <div class="modal-footer">
+      <button onclick="closeModalBtn()" class="btn-secondary">Cancelar</button>
+      <button onclick="publicar()" class="btn-primary">Publicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZCv1BsUFiy6JxUFpCmd8fV3biRKmp1XI",
+    authDomain: "rio-la-silla-comunidad.firebaseapp.com",
+    projectId: "rio-la-silla-comunidad",
+    storageBucket: "rio-la-silla-comunidad.firebasestorage.app",
+    messagingSenderId: "911759383073",
+    appId: "1:911759383073:web:a8ac1748ac62abc115a160"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  let currentUser = null;
+  let pendingLatLng = null;
+  let allPosts = [];
+  let currentCat = 'all';
+  let markers = {};
+
+  // ── AUTH ──
+  window.signInGoogle = async () => {
+    try { await signInWithPopup(auth, provider); }
+    catch(e) { console.error(e); }
+  };
+  window.signOut = () => signOut(auth);
+
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('btn-login').classList.add('hidden');
+      document.getElementById('user-info').classList.remove('hidden');
+      document.getElementById('user-avatar').src = user.photoURL || '';
+      document.getElementById('user-name').textContent = user.displayName?.split(' ')[0] || '';
+      document.getElementById('hint-text').textContent = 'Haz clic en el mapa para publicar';
+    } else {
+      document.getElementById('btn-login').classList.remove('hidden');
+      document.getElementById('user-info').classList.add('hidden');
+      document.getElementById('hint-text').textContent = 'Inicia sesión para publicar';
+    }
+  });
+
+  // ── MAP ──
+  const map = L.map('map', { zoomControl: true }).setView([25.6560, -100.2260], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Cargar GeoJSON del área (río y parques)
+  fetch('rio_overlay.geojson')
+    .then(r => r.json())
+    .then(data => {
+      L.geoJSON(data, {
+        style: feature => {
+          const p = feature.properties;
+          if (p.waterway === 'river') return { color: '#1D9E75', weight: 3, opacity: 0.8 };
+          if (p.waterway === 'stream') return { color: '#5DCAA5', weight: 1.5, opacity: 0.6 };
+          if (p.leisure === 'park') return { color: '#639922', weight: 1, fillColor: '#639922', fillOpacity: 0.08 };
+          return { color: '#888', weight: 1, opacity: 0.3 };
+        },
+        onEachFeature: (feature, layer) => {
+          if (feature.properties.name) layer.bindPopup(feature.properties.name);
+        }
+      }).addTo(map);
+    });
+
+  // Clic en mapa para nueva publicación
+  map.on('click', e => {
+    if (!currentUser) {
+      document.getElementById('hint-text').textContent = '⚠️ Inicia sesión primero';
+      setTimeout(() => document.getElementById('hint-text').textContent = 'Inicia sesión para publicar', 2000);
+      return;
+    }
+    pendingLatLng = e.latlng;
+    document.getElementById('modal-coords').textContent =
+      `📍 ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+  });
+
+  // ── PUBLICAR ──
+  window.publicar = async () => {
+    const text = document.getElementById('pub-text').value.trim();
+    const cat = document.getElementById('pub-cat').value;
+    if (!text) { alert('Escribe un mensaje.'); return; }
+    if (!pendingLatLng) return;
+
+    try {
+      await addDoc(collection(db, 'posts'), {
+        text,
+        cat,
+        lat: pendingLatLng.lat,
+        lng: pendingLatLng.lng,
+        uid: currentUser.uid,
+        userName: currentUser.displayName,
+        userPhoto: currentUser.photoURL,
+        createdAt: serverTimestamp()
+      });
+      document.getElementById('pub-text').value = '';
+      closeModalBtn();
+    } catch(e) {
+      alert('Error al publicar: ' + e.message);
+    }
+  };
+
+  // ── LEER POSTS EN TIEMPO REAL ──
+  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+  onSnapshot(q, snapshot => {
+    allPosts = [];
+    snapshot.forEach(doc => allPosts.push({ id: doc.id, ...doc.data() }));
+    renderFeed();
+    renderMarkers();
+  });
+
+  const catColors = { flora: '#639922', reporte: '#E24B4A', aviso: '#BA7517', evento: '#378ADD' };
+  const catLabel  = { flora: '🌿 Flora/fauna', reporte: '⚠️ Reporte', aviso: '📢 Aviso', evento: '📅 Evento' };
+
+  function makeIcon(cat) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${catColors[cat]};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+      iconSize: [14,14], iconAnchor: [7,7]
+    });
+  }
+
+  function renderMarkers() {
+    Object.values(markers).forEach(m => map.removeLayer(m));
+    markers = {};
+    const visible = currentCat === 'all' ? allPosts : allPosts.filter(p => p.cat === currentCat);
+    visible.forEach(post => {
+      const m = L.marker([post.lat, post.lng], { icon: makeIcon(post.cat) }).addTo(map);
+      m.bindPopup(`<b>${catLabel[post.cat]}</b><br>${post.text}<br><small>${post.userName}</small>`);
+      markers[post.id] = m;
+    });
+  }
+
+  function renderFeed() {
+    const feed = document.getElementById('feed');
+    const visible = currentCat === 'all' ? allPosts : allPosts.filter(p => p.cat === currentCat);
+    if (!visible.length) {
+      feed.innerHTML = '<p class="empty-msg">No hay publicaciones aún.</p>';
+      return;
+    }
+    feed.innerHTML = visible.map(p => {
+      const ts = p.createdAt?.toDate ? timeAgo(p.createdAt.toDate()) : 'ahora';
+      return `
+        <div class="post-card" onclick="focusPost('${p.id}')">
+          <span class="cat-badge cat-${p.cat}">${catLabel[p.cat]}</span>
+          <p class="post-text">${p.text}</p>
+          <p class="post-meta">${p.userName} · ${ts}</p>
+        </div>`;
+    }).join('');
+  }
+
+  function focusPost(id) {
+    const m = markers[id];
+    if (m) { map.setView(m.getLatLng(), 16); m.openPopup(); }
+  }
+  window.focusPost = focusPost;
+
+  window.filterCat = cat => {
+    currentCat = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+    renderFeed();
+    renderMarkers();
+  };
+
+  function timeAgo(date) {
+    const s = Math.floor((Date.now() - date) / 1000);
+    if (s < 60) return 'ahora';
+    if (s < 3600) return `hace ${Math.floor(s/60)}m`;
+    if (s < 86400) return `hace ${Math.floor(s/3600)}h`;
+    return `hace ${Math.floor(s/86400)}d`;
+  }
+
+  window.closeModal = e => { if (e.target.id === 'modal-overlay') closeModalBtn(); };
+  window.closeModalBtn = () => {
+    document.getElementById('modal-overlay').classList.add('hidden');
+    pendingLatLng = null;
+  };
+</script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+</html>
