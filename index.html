@@ -19,10 +19,11 @@
     <div id="user-info" class="hidden">
       <img id="user-avatar" src="" alt="" class="avatar" />
       <span id="user-name"></span>
+      <span id="admin-badge" class="hidden admin-badge">Admin</span>
       <button onclick="signOut()" class="btn-small">Salir</button>
     </div>
     <button id="btn-login" onclick="signInGoogle()" class="btn-primary">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Entrar con Google
     </button>
   </div>
@@ -30,17 +31,28 @@
 
 <!-- LAYOUT -->
 <div class="layout">
-
   <!-- SIDEBAR -->
   <aside class="sidebar">
+    <!-- Búsqueda por texto -->
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="🔍 Buscar en publicaciones..." oninput="applyFilters()" class="input-search" />
+    </div>
+
+    <!-- Filtros de categoría -->
     <div class="filters">
-      <p class="section-label">Filtrar por categoría</p>
+      <p class="section-label">Categoría</p>
       <div class="cat-filters">
-        <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">Todos</button>
-        <button class="cat-btn" data-cat="flora" onclick="filterCat('flora')">🌿 Flora/fauna</button>
-        <button class="cat-btn" data-cat="reporte" onclick="filterCat('reporte')">⚠️ Reportes</button>
-        <button class="cat-btn" data-cat="aviso" onclick="filterCat('aviso')">📢 Avisos</button>
-        <button class="cat-btn" data-cat="evento" onclick="filterCat('evento')">📅 Eventos</button>
+        <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">Todas</button>
+        <button class="cat-btn" data-cat="arte" onclick="filterCat('arte')">🎨 Arte y belleza</button>
+        <button class="cat-btn" data-cat="comunidad" onclick="filterCat('comunidad')">🤝 Comunidad</button>
+        <button class="cat-btn" data-cat="denuncia" onclick="filterCat('denuncia')">🚨 Denuncia</button>
+        <button class="cat-btn" data-cat="deporte" onclick="filterCat('deporte')">⚽ Deporte</button>
+        <button class="cat-btn" data-cat="educacion" onclick="filterCat('educacion')">📚 Educación</button>
+        <button class="cat-btn" data-cat="flora" onclick="filterCat('flora')">🦋 Flora/Fauna/Agua</button>
+        <button class="cat-btn" data-cat="historia" onclick="filterCat('historia')">📖 Historia</button>
+        <button class="cat-btn" data-cat="infraestructura" onclick="filterCat('infraestructura')">🏗️ Infraestructura</button>
+        <button class="cat-btn" data-cat="mascotas" onclick="filterCat('mascotas')">🐾 Mascotas</button>
+        <button class="cat-btn" data-cat="mobiliario" onclick="filterCat('mobiliario')">🪑 Mobiliario Urbano</button>
       </div>
     </div>
 
@@ -52,7 +64,7 @@
   <!-- MAP -->
   <main class="map-container">
     <div id="map"></div>
-    <div class="map-hint" id="map-hint">
+    <div class="map-hint">
       <span id="hint-text">Inicia sesión para publicar</span>
     </div>
   </main>
@@ -65,28 +77,122 @@
       <h2>Nueva publicación</h2>
       <button onclick="closeModalBtn()" class="btn-close">✕</button>
     </div>
-    <p class="modal-coords" id="modal-coords"></p>
+
+    <!-- Coordenadas -->
+    <div class="coords-row">
+      <span id="modal-coords">📍 Sin ubicación</span>
+      <button class="btn-tiny" onclick="toggleCoordsInput()">Escribir coords</button>
+    </div>
+    <div id="coords-input-row" class="hidden" style="margin-bottom:10px">
+      <input type="text" id="coords-manual" placeholder="25.65600, -100.22600" class="input-full" style="margin-bottom:4px"/>
+      <button class="btn-secondary btn-sm" onclick="applyManualCoords()">Ir a esa ubicación</button>
+    </div>
+
     <select id="pub-cat" class="input-full">
-      <option value="flora">🌿 Flora / fauna</option>
-      <option value="reporte">⚠️ Reporte de daño</option>
-      <option value="aviso">📢 Aviso comunitario</option>
-      <option value="evento">📅 Evento</option>
+      <option value="arte">🎨 Arte y belleza</option>
+      <option value="comunidad">🤝 Comunidad y convivencia</option>
+      <option value="denuncia">🚨 Denuncia y reportes</option>
+      <option value="deporte">⚽ Deporte y esparcimiento</option>
+      <option value="educacion">📚 Educación</option>
+      <option value="flora">🦋 Flora, Fauna y Agua</option>
+      <option value="historia">📖 Historia(s) y relatos</option>
+      <option value="infraestructura">🏗️ Infraestructura</option>
+      <option value="mascotas">🐾 Mascotas</option>
+      <option value="mobiliario">🪑 Mobiliario Urbano</option>
     </select>
-    <textarea id="pub-text" class="input-full" rows="4" placeholder="Describe lo que observas, reporta un daño, anuncia un evento..."></textarea>
+
+    <textarea id="pub-text" class="input-full" rows="3" placeholder="Describe lo que observas..."></textarea>
+
+    <!-- Archivos adjuntos -->
+    <div class="attach-section">
+      <p class="section-label" style="margin-bottom:6px">Adjuntos (opcional)</p>
+      <div class="attach-row">
+        <label class="attach-btn">
+          📷 Foto <small>(máx 5MB)</small>
+          <input type="file" id="file-photo" accept="image/*" onchange="previewFile('photo')" hidden />
+        </label>
+        <label class="attach-btn">
+          🎵 Audio <small>(máx 10MB)</small>
+          <input type="file" id="file-audio" accept="audio/mpeg,audio/mp3" onchange="previewFile('audio')" hidden />
+        </label>
+        <label class="attach-btn">
+          📄 Doc <small>(máx 5MB)</small>
+          <input type="file" id="file-doc" accept="application/pdf" onchange="previewFile('doc')" hidden />
+        </label>
+      </div>
+      <div id="attach-previews"></div>
+    </div>
+
     <div class="modal-footer">
       <button onclick="closeModalBtn()" class="btn-secondary">Cancelar</button>
-      <button onclick="publicar()" class="btn-primary">Publicar</button>
+      <button onclick="publicar()" class="btn-primary" id="btn-publicar">Publicar</button>
     </div>
   </div>
 </div>
 
-<!-- Firebase SDK -->
+<!-- MODAL: Ver post detalle -->
+<div id="post-modal-overlay" class="modal-overlay hidden" onclick="closePostModal(event)">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div>
+        <span id="pm-cat-badge" class="cat-badge"></span>
+        <h2 id="pm-title" style="font-size:15px;margin-top:4px"></h2>
+      </div>
+      <button onclick="closePostModalBtn()" class="btn-close">✕</button>
+    </div>
+    <p id="pm-meta" class="post-meta" style="margin-bottom:10px"></p>
+    <p id="pm-text" style="font-size:14px;line-height:1.6;margin-bottom:12px"></p>
+    <div id="pm-media" style="margin-bottom:12px"></div>
+
+    <!-- Calificación -->
+    <div class="rating-section">
+      <p class="section-label">Calificación</p>
+      <div id="pm-stars-display" class="stars-display"></div>
+      <div id="pm-rate-row" class="hidden">
+        <p style="font-size:12px;color:#888;margin-bottom:4px">Tu calificación:</p>
+        <div class="stars-input" id="stars-input">
+          <span onclick="setRating(1)">★</span>
+          <span onclick="setRating(2)">★</span>
+          <span onclick="setRating(3)">★</span>
+          <span onclick="setRating(4)">★</span>
+          <span onclick="setRating(5)">★</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comentarios -->
+    <div class="comments-section">
+      <p class="section-label">Comentarios</p>
+      <div id="pm-comments"></div>
+      <div id="pm-comment-input" class="hidden" style="margin-top:8px">
+        <textarea id="comment-text" class="input-full" rows="2" placeholder="Escribe un comentario..."></textarea>
+        <button onclick="agregarComentario()" class="btn-primary btn-sm">Comentar</button>
+      </div>
+    </div>
+
+    <!-- Panel admin -->
+    <div id="pm-admin-panel" class="hidden admin-panel">
+      <p class="section-label">Panel administrador</p>
+      <div style="display:flex;gap:8px">
+        <button onclick="aprobarPost()" class="btn-primary btn-sm">✅ Aprobar</button>
+        <button onclick="suprimirPost()" class="btn-danger btn-sm">🗑️ Suprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp }
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy,
+           serverTimestamp, doc, updateDoc, deleteDoc, getDoc, setDoc }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  // Cloudinary config
+  const CLOUDINARY_CLOUD = 'dfkfaae4l';
+  const CLOUDINARY_PRESET = 'riolasilla_uploads';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDZCv1BsUFiy6JxUFpCmd8fV3biRKmp1XI",
@@ -97,16 +203,50 @@
     appId: "1:911759383073:web:a8ac1748ac62abc115a160"
   };
 
-  const app = initializeApp(firebaseConfig);
+  const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = getFirestore(app);
+  const db   = getFirestore(app);
   const provider = new GoogleAuthProvider();
 
+  async function uploadToCloudinary(file, type) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_PRESET);
+    formData.append('folder', 'riolasilla');
+    const resourceType = type === 'audio' ? 'video' : type === 'doc' ? 'raw' : 'image';
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`, {
+      method: 'POST', body: formData
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.secure_url;
+  }
+
+  // ── ADMIN UIDs ── agrega tu UID aquí después del primer login
+  const ADMIN_UIDS = ['TU_UID_AQUI'];
+
   let currentUser = null;
+  let isAdmin = false;
   let pendingLatLng = null;
   let allPosts = [];
   let currentCat = 'all';
+  let searchText = '';
   let markers = {};
+  let currentPostId = null;
+  let pendingRating = 0;
+
+  const CATS = {
+    arte:           { label: '🎨 Arte y belleza',        color: '#E91E8C' },
+    comunidad:      { label: '🤝 Comunidad',             color: '#9C27B0' },
+    denuncia:       { label: '🚨 Denuncia',              color: '#F44336' },
+    deporte:        { label: '⚽ Deporte',               color: '#FF9800' },
+    educacion:      { label: '📚 Educación',             color: '#2196F3' },
+    flora:          { label: '🦋 Flora/Fauna/Agua',      color: '#4CAF50' },
+    historia:       { label: '📖 Historia',              color: '#795548' },
+    infraestructura:{ label: '🏗️ Infraestructura',      color: '#607D8B' },
+    mascotas:       { label: '🐾 Mascotas',              color: '#FF5722' },
+    mobiliario:     { label: '🪑 Mobiliario Urbano',     color: '#00BCD4' },
+  };
 
   // ── AUTH ──
   window.signInGoogle = async () => {
@@ -117,16 +257,24 @@
 
   onAuthStateChanged(auth, user => {
     currentUser = user;
+    isAdmin = user && ADMIN_UIDS.includes(user.uid);
     if (user) {
       document.getElementById('btn-login').classList.add('hidden');
       document.getElementById('user-info').classList.remove('hidden');
       document.getElementById('user-avatar').src = user.photoURL || '';
       document.getElementById('user-name').textContent = user.displayName?.split(' ')[0] || '';
       document.getElementById('hint-text').textContent = 'Haz clic en el mapa para publicar';
+      if (isAdmin) document.getElementById('admin-badge').classList.remove('hidden');
+      // Mostrar posts pendientes si es admin
+      renderFeed();
+      renderMarkers();
     } else {
       document.getElementById('btn-login').classList.remove('hidden');
       document.getElementById('user-info').classList.add('hidden');
+      document.getElementById('admin-badge').classList.add('hidden');
       document.getElementById('hint-text').textContent = 'Inicia sesión para publicar';
+      renderFeed();
+      renderMarkers();
     }
   });
 
@@ -137,122 +285,338 @@
     maxZoom: 19
   }).addTo(map);
 
-  // Cargar GeoJSON del área (río y parques)
-  fetch('rio_overlay.geojson')
-    .then(r => r.json())
-    .then(data => {
-      L.geoJSON(data, {
-        style: feature => {
-          const p = feature.properties;
-          if (p.waterway === 'river') return { color: '#1D9E75', weight: 3, opacity: 0.8 };
-          if (p.waterway === 'stream') return { color: '#5DCAA5', weight: 1.5, opacity: 0.6 };
-          if (p.leisure === 'park') return { color: '#639922', weight: 1, fillColor: '#639922', fillOpacity: 0.08 };
-          return { color: '#888', weight: 1, opacity: 0.3 };
-        },
-        onEachFeature: (feature, layer) => {
-          if (feature.properties.name) layer.bindPopup(feature.properties.name);
-        }
-      }).addTo(map);
-    });
+  fetch('rio_overlay.geojson').then(r => r.json()).then(data => {
+    L.geoJSON(data, {
+      style: f => {
+        const p = f.properties;
+        if (p.waterway === 'river') return { color: '#1D9E75', weight: 3, opacity: 0.8 };
+        if (p.waterway === 'stream') return { color: '#5DCAA5', weight: 1.5, opacity: 0.6 };
+        if (p.leisure === 'park') return { color: '#639922', weight: 1, fillColor: '#639922', fillOpacity: 0.08 };
+        return { color: '#aaa', weight: 1, opacity: 0.2 };
+      },
+      onEachFeature: (f, l) => { if (f.properties.name) l.bindPopup(f.properties.name); }
+    }).addTo(map);
+  });
 
-  // Clic en mapa para nueva publicación
+  // Clic en mapa
+  let tempMarker = null;
   map.on('click', e => {
     if (!currentUser) {
       document.getElementById('hint-text').textContent = '⚠️ Inicia sesión primero';
-      setTimeout(() => document.getElementById('hint-text').textContent = 'Inicia sesión para publicar', 2000);
+      setTimeout(() => document.getElementById('hint-text').textContent = 'Haz clic en el mapa para publicar', 2000);
       return;
     }
-    pendingLatLng = e.latlng;
-    document.getElementById('modal-coords').textContent =
-      `📍 ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+    setPendingLocation(e.latlng.lat, e.latlng.lng);
     document.getElementById('modal-overlay').classList.remove('hidden');
   });
+
+  function setPendingLocation(lat, lng) {
+    pendingLatLng = { lat, lng };
+    document.getElementById('modal-coords').textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    if (tempMarker) map.removeLayer(tempMarker);
+    tempMarker = L.marker([lat, lng]).addTo(map);
+  }
+
+  // Coords manuales
+  window.toggleCoordsInput = () => {
+    document.getElementById('coords-input-row').classList.toggle('hidden');
+  };
+  window.applyManualCoords = () => {
+    const val = document.getElementById('coords-manual').value.trim();
+    const parts = val.split(',').map(s => parseFloat(s.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      setPendingLocation(parts[0], parts[1]);
+      map.setView([parts[0], parts[1]], 16);
+      document.getElementById('coords-input-row').classList.add('hidden');
+    } else {
+      alert('Formato incorrecto. Usa: 25.65600, -100.22600');
+    }
+  };
+
+  // ── ARCHIVOS ──
+  const fileLimits = { photo: 5, audio: 10, doc: 5 };
+  const fileData = { photo: null, audio: null, doc: null };
+
+  window.previewFile = (type) => {
+    const input = document.getElementById(`file-${type}`);
+    const file = input.files[0];
+    if (!file) return;
+    const maxMB = fileLimits[type];
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`El archivo supera el límite de ${maxMB}MB.`);
+      input.value = '';
+      return;
+    }
+    fileData[type] = file;
+    renderPreviews();
+  };
+
+  function renderPreviews() {
+    const div = document.getElementById('attach-previews');
+    let html = '';
+    if (fileData.photo) html += `<div class="preview-item">📷 ${fileData.photo.name} <button onclick="clearFile('photo')">✕</button></div>`;
+    if (fileData.audio) html += `<div class="preview-item">🎵 ${fileData.audio.name} <button onclick="clearFile('audio')">✕</button></div>`;
+    if (fileData.doc)   html += `<div class="preview-item">📄 ${fileData.doc.name} <button onclick="clearFile('doc')">✕</button></div>`;
+    div.innerHTML = html;
+  }
+
+  window.clearFile = (type) => {
+    fileData[type] = null;
+    document.getElementById(`file-${type}`).value = '';
+    renderPreviews();
+  };
+
+  async function uploadFile(file, postId, type) {
+    return uploadToCloudinary(file, type);
+  }
 
   // ── PUBLICAR ──
   window.publicar = async () => {
     const text = document.getElementById('pub-text').value.trim();
     const cat = document.getElementById('pub-cat').value;
     if (!text) { alert('Escribe un mensaje.'); return; }
-    if (!pendingLatLng) return;
+    if (!pendingLatLng) { alert('Selecciona una ubicación en el mapa.'); return; }
+
+    const btn = document.getElementById('btn-publicar');
+    btn.textContent = 'Publicando...'; btn.disabled = true;
 
     try {
-      await addDoc(collection(db, 'posts'), {
-        text,
-        cat,
+      // Crear documento primero para obtener ID
+      const docRef = await addDoc(collection(db, 'posts'), {
+        text, cat,
         lat: pendingLatLng.lat,
         lng: pendingLatLng.lng,
         uid: currentUser.uid,
         userName: currentUser.displayName,
-        userPhoto: currentUser.photoURL,
-        createdAt: serverTimestamp()
+        userPhoto: currentUser.photoURL || '',
+        createdAt: serverTimestamp(),
+        approved: isAdmin, // admin publica directo, otros esperan moderación
+        photoURL: null, audioURL: null, docURL: null,
+        ratings: {}, ratingAvg: 0, ratingCount: 0
       });
+
+      // Subir archivos si existen
+      const updates = {};
+      if (fileData.photo) updates.photoURL = await uploadFile(fileData.photo, docRef.id, 'photo');
+      if (fileData.audio) updates.audioURL = await uploadFile(fileData.audio, docRef.id, 'audio');
+      if (fileData.doc)   updates.docURL   = await uploadFile(fileData.doc,   docRef.id, 'doc');
+      if (Object.keys(updates).length) await updateDoc(docRef, updates);
+
+      // Reset
       document.getElementById('pub-text').value = '';
+      fileData.photo = fileData.audio = fileData.doc = null;
+      renderPreviews();
       closeModalBtn();
+      if (!isAdmin) alert('✅ Publicación enviada. El administrador la revisará antes de publicarla.');
     } catch(e) {
-      alert('Error al publicar: ' + e.message);
+      alert('Error: ' + e.message);
+    } finally {
+      btn.textContent = 'Publicar'; btn.disabled = false;
     }
   };
 
-  // ── LEER POSTS EN TIEMPO REAL ──
+  // ── LEER POSTS ──
   const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
   onSnapshot(q, snapshot => {
     allPosts = [];
-    snapshot.forEach(doc => allPosts.push({ id: doc.id, ...doc.data() }));
-    renderFeed();
-    renderMarkers();
+    snapshot.forEach(d => allPosts.push({ id: d.id, ...d.data() }));
+    applyFilters();
   });
 
-  const catColors = { flora: '#639922', reporte: '#E24B4A', aviso: '#BA7517', evento: '#378ADD' };
-  const catLabel  = { flora: '🌿 Flora/fauna', reporte: '⚠️ Reporte', aviso: '📢 Aviso', evento: '📅 Evento' };
+  // ── FILTROS ──
+  window.filterCat = cat => {
+    currentCat = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+    applyFilters();
+  };
+
+  window.applyFilters = () => {
+    searchText = document.getElementById('search-input')?.value.toLowerCase() || '';
+    let visible = allPosts.filter(p => {
+      if (!p.approved && !isAdmin) return false; // ocultar no aprobados a usuarios normales
+      if (currentCat !== 'all' && p.cat !== currentCat) return false;
+      if (searchText && !p.text?.toLowerCase().includes(searchText)) return false;
+      return true;
+    });
+    renderFeed(visible);
+    renderMarkers(visible);
+  };
 
   function makeIcon(cat) {
+    const color = CATS[cat]?.color || '#888';
     return L.divIcon({
       className: '',
-      html: `<div style="width:14px;height:14px;border-radius:50%;background:${catColors[cat]};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
       iconSize: [14,14], iconAnchor: [7,7]
     });
   }
 
-  function renderMarkers() {
+  function renderMarkers(visible) {
+    if (!visible) visible = allPosts;
     Object.values(markers).forEach(m => map.removeLayer(m));
     markers = {};
-    const visible = currentCat === 'all' ? allPosts : allPosts.filter(p => p.cat === currentCat);
     visible.forEach(post => {
+      if (!post.lat) return;
       const m = L.marker([post.lat, post.lng], { icon: makeIcon(post.cat) }).addTo(map);
-      m.bindPopup(`<b>${catLabel[post.cat]}</b><br>${post.text}<br><small>${post.userName}</small>`);
+      const label = CATS[post.cat]?.label || post.cat;
+      m.bindPopup(`<b>${label}</b><br><small>${post.text?.substring(0,80)}...</small><br><a href="#" onclick="openPostModal('${post.id}')">Ver más</a>`);
       markers[post.id] = m;
     });
   }
 
-  function renderFeed() {
+  function renderFeed(visible) {
+    if (!visible) visible = allPosts;
     const feed = document.getElementById('feed');
-    const visible = currentCat === 'all' ? allPosts : allPosts.filter(p => p.cat === currentCat);
     if (!visible.length) {
-      feed.innerHTML = '<p class="empty-msg">No hay publicaciones aún.</p>';
+      feed.innerHTML = '<p class="empty-msg">No hay publicaciones.</p>';
       return;
     }
     feed.innerHTML = visible.map(p => {
       const ts = p.createdAt?.toDate ? timeAgo(p.createdAt.toDate()) : 'ahora';
+      const label = CATS[p.cat]?.label || p.cat;
+      const color = CATS[p.cat]?.color || '#888';
+      const stars = p.ratingAvg ? '★'.repeat(Math.round(p.ratingAvg)) + `<small> ${p.ratingAvg.toFixed(1)}</small>` : '';
+      const pendiente = !p.approved ? '<span class="badge-pending">Pendiente</span>' : '';
       return `
-        <div class="post-card" onclick="focusPost('${p.id}')">
-          <span class="cat-badge cat-${p.cat}">${catLabel[p.cat]}</span>
-          <p class="post-text">${p.text}</p>
-          <p class="post-meta">${p.userName} · ${ts}</p>
+        <div class="post-card" onclick="openPostModal('${p.id}')">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <span class="cat-dot" style="background:${color}"></span>
+            <span style="font-size:11px;font-weight:500;color:${color}">${label}</span>
+            ${pendiente}
+          </div>
+          <p class="post-text">${p.text?.substring(0,100)}${p.text?.length > 100 ? '…' : ''}</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <p class="post-meta">${p.userName} · ${ts}</p>
+            <span style="color:#f59e0b;font-size:12px">${stars}</span>
+          </div>
         </div>`;
     }).join('');
   }
 
-  function focusPost(id) {
+  // ── VER POST DETALLE ──
+  window.openPostModal = (id) => {
+    currentPostId = id;
+    const p = allPosts.find(x => x.id === id);
+    if (!p) return;
+    const label = CATS[p.cat]?.label || p.cat;
+    const color = CATS[p.cat]?.color || '#888';
+    const ts = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' }) : '';
+
+    document.getElementById('pm-cat-badge').textContent = label;
+    document.getElementById('pm-cat-badge').style.background = color + '22';
+    document.getElementById('pm-cat-badge').style.color = color;
+    document.getElementById('pm-title').textContent = '';
+    document.getElementById('pm-meta').textContent = `${p.userName} · ${ts}`;
+    document.getElementById('pm-text').textContent = p.text;
+
+    // Media
+    let mediaHTML = '';
+    if (p.photoURL) mediaHTML += `<img src="${p.photoURL}" style="max-width:100%;border-radius:8px;margin-bottom:8px" />`;
+    if (p.audioURL) mediaHTML += `<audio controls src="${p.audioURL}" style="width:100%;margin-bottom:8px"></audio>`;
+    if (p.docURL)   mediaHTML += `<a href="${p.docURL}" target="_blank" class="btn-secondary btn-sm">📄 Ver documento</a>`;
+    document.getElementById('pm-media').innerHTML = mediaHTML;
+
+    // Calificación
+    const avg = p.ratingAvg || 0;
+    const count = p.ratingCount || 0;
+    document.getElementById('pm-stars-display').innerHTML =
+      `${'★'.repeat(Math.round(avg))}${'☆'.repeat(5 - Math.round(avg))} <small>${avg.toFixed(1)} (${count} votos)</small>`;
+
+    const myRating = currentUser && p.ratings ? p.ratings[currentUser.uid] : null;
+    const rateRow = document.getElementById('pm-rate-row');
+    if (currentUser && !myRating) {
+      rateRow.classList.remove('hidden');
+      pendingRating = 0;
+      document.querySelectorAll('#stars-input span').forEach((s, i) => s.style.color = '#ddd');
+    } else {
+      rateRow.classList.add('hidden');
+    }
+
+    // Comentarios
+    renderComments(p.comments || []);
+    document.getElementById('pm-comment-input').classList.toggle('hidden', !currentUser);
+
+    // Admin panel
+    document.getElementById('pm-admin-panel').classList.toggle('hidden', !isAdmin);
+
+    document.getElementById('post-modal-overlay').classList.remove('hidden');
+
+    // Foco en mapa
+    if (p.lat && markers[id]) { map.setView([p.lat, p.lng], 16); markers[id].openPopup(); }
+  };
+
+  function renderComments(comments) {
+    const div = document.getElementById('pm-comments');
+    if (!comments.length) { div.innerHTML = '<p style="font-size:12px;color:#aaa">Sin comentarios aún.</p>'; return; }
+    div.innerHTML = comments.map(c => `
+      <div class="comment">
+        <span class="comment-user">${c.userName}</span>
+        <span class="comment-text">${c.text}</span>
+        <span class="comment-time">${timeAgo(new Date(c.createdAt))}</span>
+      </div>`).join('');
+  }
+
+  window.agregarComentario = async () => {
+    const text = document.getElementById('comment-text').value.trim();
+    if (!text || !currentPostId || !currentUser) return;
+    const p = allPosts.find(x => x.id === currentPostId);
+    const comments = p.comments || [];
+    comments.push({ userName: currentUser.displayName, text, createdAt: Date.now() });
+    await updateDoc(doc(db, 'posts', currentPostId), { comments });
+    document.getElementById('comment-text').value = '';
+  };
+
+  // ── CALIFICACIÓN ──
+  window.setRating = async (stars) => {
+    if (!currentUser || !currentPostId) return;
+    pendingRating = stars;
+    document.querySelectorAll('#stars-input span').forEach((s, i) => {
+      s.style.color = i < stars ? '#f59e0b' : '#ddd';
+    });
+    const p = allPosts.find(x => x.id === currentPostId);
+    const ratings = p.ratings || {};
+    ratings[currentUser.uid] = stars;
+    const vals = Object.values(ratings);
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    await updateDoc(doc(db, 'posts', currentPostId), {
+      ratings,
+      ratingAvg: Math.round(avg * 10) / 10,
+      ratingCount: vals.length
+    });
+    document.getElementById('pm-rate-row').classList.add('hidden');
+  };
+
+  // ── ADMIN ──
+  window.aprobarPost = async () => {
+    if (!isAdmin || !currentPostId) return;
+    await updateDoc(doc(db, 'posts', currentPostId), { approved: true });
+    alert('✅ Publicación aprobada.');
+    closePostModalBtn();
+  };
+
+  window.suprimirPost = async () => {
+    if (!isAdmin || !currentPostId) return;
+    if (!confirm('¿Eliminar esta publicación?')) return;
+    await deleteDoc(doc(db, 'posts', currentPostId));
+    closePostModalBtn();
+  };
+
+  window.closePostModal = e => { if (e.target.id === 'post-modal-overlay') closePostModalBtn(); };
+  window.closePostModalBtn = () => {
+    document.getElementById('post-modal-overlay').classList.add('hidden');
+    currentPostId = null;
+  };
+
+  window.closeModal = e => { if (e.target.id === 'modal-overlay') closeModalBtn(); };
+  window.closeModalBtn = () => {
+    document.getElementById('modal-overlay').classList.add('hidden');
+    pendingLatLng = null;
+    if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+  };
+
+  window.focusPost = id => {
     const m = markers[id];
     if (m) { map.setView(m.getLatLng(), 16); m.openPopup(); }
-  }
-  window.focusPost = focusPost;
-
-  window.filterCat = cat => {
-    currentCat = cat;
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
-    renderFeed();
-    renderMarkers();
   };
 
   function timeAgo(date) {
@@ -262,14 +626,6 @@
     if (s < 86400) return `hace ${Math.floor(s/3600)}h`;
     return `hace ${Math.floor(s/86400)}d`;
   }
-
-  window.closeModal = e => { if (e.target.id === 'modal-overlay') closeModalBtn(); };
-  window.closeModalBtn = () => {
-    document.getElementById('modal-overlay').classList.add('hidden');
-    pendingLatLng = null;
-  };
 </script>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
