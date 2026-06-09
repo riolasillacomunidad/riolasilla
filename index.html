@@ -1,93 +1,202 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Parque Río La Silla — Red Comunitaria</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
 <!-- HEADER -->
 <header class="header">
   <div class="header-left">
+    <button class="btn-icon btn-menu" id="btn-menu" onclick="toggleMobileSidebar()">☰</button>
     <span class="logo">🌿 Río La Silla</span>
-    <span class="subtitle">Red Comunitaria</span>
   </div>
+  <button class="btn-publish hidden" id="btn-publish" onclick="openPublishModal()">
+    <span>📍</span> Publicar punto
+  </button>
   <div class="header-right">
-    <div id="user-info" class="hidden">
-      <img id="user-avatar" src="" alt="" class="avatar" />
-      <span id="user-name"></span>
-      <span id="admin-badge" class="hidden admin-badge">Admin</span>
+    <div id="user-info" class="hidden" style="display:flex;align-items:center;gap:8px">
+      <button class="btn-msg" id="btn-msg" onclick="toggleMessages()">
+        ✉️<span class="msg-count hidden" id="msg-count">0</span>
+      </button>
+      <img id="user-avatar" src="" alt="" class="avatar"/>
+      <span id="user-name" style="font-size:13px;font-weight:500"></span>
+      <span id="badge-admin" class="badge-admin hidden">Admin</span>
+      <span id="badge-mod" class="badge-mod hidden">Mod</span>
       <button onclick="signOut()" class="btn-small">Salir</button>
     </div>
-    <button id="btn-login" onclick="signInGoogle()" class="btn-primary">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-      Entrar con Google
-    </button>
+    <button id="btn-login" onclick="openAuthModal()" class="btn-primary">Entrar</button>
   </div>
 </header>
 
 <!-- LAYOUT -->
 <div class="layout">
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <!-- Búsqueda por texto -->
+  <aside class="sidebar" id="sidebar">
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="🔍 Buscar en publicaciones..." oninput="applyFilters()" class="input-search" />
+      <input type="text" id="search-input" placeholder="🔍 Buscar..." oninput="handleSearch()" class="input-search"/>
     </div>
-
-    <!-- Filtros de categoría -->
-    <div class="filters">
-      <p class="section-label">Categoría</p>
-      <div class="cat-filters">
-        <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">Todas</button>
-        <button class="cat-btn" data-cat="arte" onclick="filterCat('arte')">🎨 Arte y belleza</button>
-        <button class="cat-btn" data-cat="comunidad" onclick="filterCat('comunidad')">🤝 Comunidad</button>
-        <button class="cat-btn" data-cat="denuncia" onclick="filterCat('denuncia')">🚨 Denuncia</button>
-        <button class="cat-btn" data-cat="deporte" onclick="filterCat('deporte')">⚽ Deporte</button>
-        <button class="cat-btn" data-cat="educacion" onclick="filterCat('educacion')">📚 Educación</button>
-        <button class="cat-btn" data-cat="flora" onclick="filterCat('flora')">🦋 Flora/Fauna/Agua</button>
-        <button class="cat-btn" data-cat="historia" onclick="filterCat('historia')">📖 Historia</button>
-        <button class="cat-btn" data-cat="infraestructura" onclick="filterCat('infraestructura')">🏗️ Infraestructura</button>
-        <button class="cat-btn" data-cat="mascotas" onclick="filterCat('mascotas')">🐾 Mascotas</button>
-        <button class="cat-btn" data-cat="mobiliario" onclick="filterCat('mobiliario')">🪑 Mobiliario Urbano</button>
-      </div>
-    </div>
-
-    <div id="feed" class="feed">
-      <p class="empty-msg">Cargando publicaciones...</p>
-    </div>
+    <div class="cat-list" id="cat-list"></div>
   </aside>
 
   <!-- MAP -->
   <main class="map-container">
     <div id="map"></div>
-    <div class="map-hint">
-      <span id="hint-text">Inicia sesión para publicar</span>
+
+    <!-- Results panel (bottom sheet mobile / side panel desktop) -->
+    <div class="results-panel" id="results-panel">
+      <div class="panel-handle" onclick="closeResults()"></div>
+      <div class="panel-header">
+        <span class="panel-title" id="results-title">Resultados</span>
+        <button class="panel-close" onclick="closeResults()">✕</button>
+      </div>
+      <div class="panel-list" id="results-list"></div>
     </div>
   </main>
 </div>
 
-<!-- MODAL: Nueva publicación -->
-<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+<!-- DETAIL SHEET -->
+<div class="detail-sheet" id="detail-sheet">
+  <div class="detail-backdrop" onclick="closeDetail()"></div>
+  <div class="detail-body" id="detail-body">
+    <div class="detail-handle"></div>
+    <div class="detail-header">
+      <div class="detail-header-info">
+        <span class="detail-cat" id="d-cat"></span>
+        <p class="detail-user" id="d-user"></p>
+      </div>
+      <div class="detail-actions">
+        <button class="btn-icon" id="d-btn-msg" title="Enviar mensaje" onclick="msgToPostOwner()">✉️</button>
+        <button class="btn-icon hidden" id="d-btn-move" title="Desplazar punto" onclick="startMovePoint()">🔀</button>
+        <button class="btn-icon hidden" id="d-btn-edit" title="Editar" onclick="openEditModal()">✏️</button>
+        <button class="btn-icon hidden" id="d-btn-delete" title="Eliminar" onclick="deletePost()">🗑️</button>
+        <button class="btn-icon" id="d-btn-report" title="Reportar abuso" onclick="reportPost()">🚩</button>
+        <button class="btn-close" onclick="closeDetail()">✕</button>
+      </div>
+    </div>
+    <div class="detail-content">
+      <div id="d-media"></div>
+      <p class="detail-text" id="d-text"></p>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px" id="d-coords"></p>
+
+      <!-- Admin/Mod panel -->
+      <div class="admin-section hidden" id="d-admin">
+        <div class="admin-section-title">Moderación</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-primary btn-sm hidden" id="d-btn-approve" onclick="approvePost()">✅ Aprobar</button>
+          <button class="btn-sm" id="d-btn-reports-count" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="showPostReports()">🚩 Reportes (<span id="d-report-count">0</span>)</button>
+        </div>
+      </div>
+
+      <!-- Rating -->
+      <div class="detail-section">
+        <div class="section-title">Calificación</div>
+        <div class="stars-row" id="d-stars-display"></div>
+        <div id="d-rate-area" class="hidden" style="margin-top:10px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:6px">Tu calificación:</p>
+          <div class="stars-row" id="d-stars-input"></div>
+          <div class="bubble-preview" id="d-rating-preview"></div>
+          <div style="display:flex;gap:8px;margin-top:8px" id="d-rating-confirm" class="hidden">
+            <button class="btn-secondary btn-sm" onclick="cancelRating()">Cancelar</button>
+            <button class="btn-primary btn-sm" onclick="confirmRating()">Confirmar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="detail-section">
+        <div class="section-title">Comentarios</div>
+        <div id="d-comments"></div>
+        <div id="d-comment-form" class="hidden" style="margin-top:10px">
+          <textarea id="d-comment-text" class="input-full" rows="2" placeholder="Escribe un comentario..." oninput="previewComment()"></textarea>
+          <div class="bubble-preview" id="d-comment-preview"></div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button class="btn-secondary btn-sm" onclick="cancelComment()">Cancelar</button>
+            <button class="btn-primary btn-sm" onclick="submitComment()">Publicar</button>
+          </div>
+        </div>
+        <button class="btn-secondary btn-sm" id="d-btn-comment" style="margin-top:8px" onclick="openCommentForm()">+ Comentar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGES WINDOW -->
+<div class="msg-window" id="msg-window">
+  <div class="msg-win-header">
+    <div style="display:flex;align-items:center">
+      <button class="msg-back hidden" id="msg-back" onclick="showInbox()">←</button>
+      <h3 id="msg-win-title">Mensajes</h3>
+    </div>
+    <button class="btn-close" onclick="toggleMessages()">✕</button>
+  </div>
+  <div id="msg-inbox" class="msg-list"></div>
+  <div id="msg-thread-view" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="msg-thread" id="msg-thread"></div>
+    <div class="msg-compose">
+      <textarea id="msg-reply-text" rows="2" placeholder="Escribe un mensaje..."></textarea>
+      <button class="btn-primary btn-sm" onclick="sendReply()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Auth -->
+<div id="auth-modal" class="modal-overlay hidden" onclick="closeAuthOnBackdrop(event)">
   <div class="modal">
     <div class="modal-header">
-      <h2>Nueva publicación</h2>
-      <button onclick="closeModalBtn()" class="btn-close">✕</button>
+      <h2>Acceder</h2>
+      <button class="btn-close" onclick="closeAuthModal()">✕</button>
     </div>
+    <button onclick="signInGoogle()" class="btn-secondary" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Continuar con Google
+    </button>
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px">— o con correo —</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Iniciar sesión</button>
+      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Registrarse</button>
+    </div>
+    <div id="auth-login-form">
+      <input type="email" id="login-email" class="input-full" placeholder="Correo electrónico"/>
+      <input type="password" id="login-password" class="input-full" placeholder="Contraseña"/>
+      <button onclick="signInEmail()" class="btn-primary" style="width:100%">Entrar</button>
+      <p id="login-error" style="font-size:12px;color:var(--red);margin-top:6px"></p>
+    </div>
+    <div id="auth-register-form" class="hidden">
+      <input type="text" id="reg-name" class="input-full" placeholder="Nombre completo"/>
+      <input type="email" id="reg-email" class="input-full" placeholder="Correo electrónico"/>
+      <input type="password" id="reg-password" class="input-full" placeholder="Contraseña (mín. 6 caracteres)"/>
+      <div class="terms-check">
+        <input type="checkbox" id="terms-check"/>
+        <label for="terms-check">Tengo 18 años o más y acepto los <a href="terminos.html" target="_blank">Términos de Uso</a></label>
+      </div>
+      <button onclick="registerEmail()" class="btn-primary" style="width:100%">Crear cuenta</button>
+      <p id="reg-error" style="font-size:12px;color:var(--red);margin-top:6px"></p>
+    </div>
+  </div>
+</div>
 
-    <!-- Coordenadas -->
-    <div class="coords-row">
-      <span id="modal-coords">📍 Sin ubicación</span>
-      <button class="btn-tiny" onclick="toggleCoordsInput()">Escribir coords</button>
+<!-- MODAL: Publish / Edit -->
+<div id="publish-modal" class="modal-overlay hidden" onclick="closePublishOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="publish-modal-title">Nueva publicación</h2>
+      <button class="btn-close" onclick="closePublishModal()">✕</button>
     </div>
-    <div id="coords-input-row" class="hidden" style="margin-bottom:10px">
-      <input type="text" id="coords-manual" placeholder="25.65600, -100.22600" class="input-full" style="margin-bottom:4px"/>
+    <div class="coords-row">
+      <span id="pub-coords">📍 Haz clic en el mapa para ubicar</span>
+      <button class="btn-small" onclick="toggleManualCoords()">Escribir coords</button>
+    </div>
+    <div id="manual-coords-row" class="hidden" style="margin-bottom:8px">
+      <input type="text" id="manual-coords-input" class="input-full" placeholder="25.65600, -100.22600"/>
       <button class="btn-secondary btn-sm" onclick="applyManualCoords()">Ir a esa ubicación</button>
     </div>
-
     <select id="pub-cat" class="input-full">
       <option value="arte">🎨 Arte y belleza</option>
       <option value="comunidad">🤝 Comunidad y convivencia</option>
@@ -100,532 +209,893 @@
       <option value="mascotas">🐾 Mascotas</option>
       <option value="mobiliario">🪑 Mobiliario Urbano</option>
     </select>
-
     <textarea id="pub-text" class="input-full" rows="3" placeholder="Describe lo que observas..."></textarea>
-
-    <!-- Archivos adjuntos -->
-    <div class="attach-section">
-      <p class="section-label" style="margin-bottom:6px">Adjuntos (opcional)</p>
+    <div style="margin-bottom:8px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:6px">ADJUNTOS (opcional)</p>
       <div class="attach-row">
-        <label class="attach-btn">
-          📷 Foto <small>(máx 5MB)</small>
-          <input type="file" id="file-photo" accept="image/*" onchange="previewFile('photo')" hidden />
-        </label>
-        <label class="attach-btn">
-          🎵 Audio <small>(máx 10MB)</small>
-          <input type="file" id="file-audio" accept="audio/mpeg,audio/mp3" onchange="previewFile('audio')" hidden />
-        </label>
-        <label class="attach-btn">
-          📄 Doc <small>(máx 5MB)</small>
-          <input type="file" id="file-doc" accept="application/pdf" onchange="previewFile('doc')" hidden />
-        </label>
+        <label class="attach-btn">📷 Foto <small>(máx 5MB)</small><input type="file" id="file-photo" accept="image/*" onchange="handleFile('photo')" hidden/></label>
+        <label class="attach-btn">🎵 Audio <small>(máx 10MB)</small><input type="file" id="file-audio" accept="audio/mpeg,audio/mp3" onchange="handleFile('audio')" hidden/></label>
+        <label class="attach-btn">📄 Doc <small>(máx 5MB)</small><input type="file" id="file-doc" accept="application/pdf" onchange="handleFile('doc')" hidden/></label>
       </div>
-      <div id="attach-previews"></div>
+      <div id="file-previews"></div>
     </div>
-
     <div class="modal-footer">
-      <button onclick="closeModalBtn()" class="btn-secondary">Cancelar</button>
-      <button onclick="publicar()" class="btn-primary" id="btn-publicar">Publicar</button>
+      <button onclick="closePublishModal()" class="btn-secondary">Cancelar</button>
+      <button onclick="submitPost()" class="btn-primary" id="btn-submit-post">Publicar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Ver post detalle -->
-<div id="post-modal-overlay" class="modal-overlay hidden" onclick="closePostModal(event)">
-  <div class="modal modal-wide">
+<!-- MODAL: New Message -->
+<div id="new-msg-modal" class="modal-overlay hidden" onclick="closeNewMsgOnBackdrop(event)">
+  <div class="modal">
     <div class="modal-header">
-      <div>
-        <span id="pm-cat-badge" class="cat-badge"></span>
-        <h2 id="pm-title" style="font-size:15px;margin-top:4px"></h2>
-      </div>
-      <button onclick="closePostModalBtn()" class="btn-close">✕</button>
+      <h2>Nuevo mensaje</h2>
+      <button class="btn-close" onclick="closeNewMsgModal()">✕</button>
     </div>
-    <p id="pm-meta" class="post-meta" style="margin-bottom:10px"></p>
-    <p id="pm-text" style="font-size:14px;line-height:1.6;margin-bottom:12px"></p>
-    <div id="pm-media" style="margin-bottom:12px"></div>
-
-    <!-- Calificación -->
-    <div class="rating-section">
-      <p class="section-label">Calificación</p>
-      <div id="pm-stars-display" class="stars-display"></div>
-      <div id="pm-rate-row" class="hidden">
-        <p style="font-size:12px;color:#888;margin-bottom:4px">Tu calificación:</p>
-        <div class="stars-input" id="stars-input">
-          <span onclick="setRating(1)">★</span>
-          <span onclick="setRating(2)">★</span>
-          <span onclick="setRating(3)">★</span>
-          <span onclick="setRating(4)">★</span>
-          <span onclick="setRating(5)">★</span>
-        </div>
-      </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Para: <strong id="new-msg-to-name"></strong></p>
+    <textarea id="new-msg-text" class="input-full" rows="4" placeholder="Escribe tu mensaje..."></textarea>
+    <div class="modal-footer">
+      <button onclick="closeNewMsgModal()" class="btn-secondary">Cancelar</button>
+      <button onclick="sendNewMessage()" class="btn-primary">Enviar</button>
     </div>
+  </div>
+</div>
 
-    <!-- Comentarios -->
-    <div class="comments-section">
-      <p class="section-label">Comentarios</p>
-      <div id="pm-comments"></div>
-      <div id="pm-comment-input" class="hidden" style="margin-top:8px">
-        <textarea id="comment-text" class="input-full" rows="2" placeholder="Escribe un comentario..."></textarea>
-        <button onclick="agregarComentario()" class="btn-primary btn-sm">Comentar</button>
-      </div>
+<!-- MODAL: Admin Panel -->
+<div id="admin-modal" class="modal-overlay hidden" onclick="closeAdminOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Panel de administración</h2>
+      <button class="btn-close" onclick="closeAdminModal()">✕</button>
     </div>
-
-    <!-- Panel admin -->
-    <div id="pm-admin-panel" class="hidden admin-panel">
-      <p class="section-label">Panel administrador</p>
-      <div style="display:flex;gap:8px">
-        <button onclick="aprobarPost()" class="btn-primary btn-sm">✅ Aprobar</button>
-        <button onclick="suprimirPost()" class="btn-danger btn-sm">🗑️ Suprimir</button>
-      </div>
+    <div class="admin-section">
+      <div class="admin-section-title">Agregar moderador</div>
+      <input type="email" id="mod-email-input" class="input-full" placeholder="correo@ejemplo.com"/>
+      <button onclick="addModerator()" class="btn-primary btn-sm">Agregar moderador</button>
+      <div id="mod-list" style="margin-top:10px"></div>
+    </div>
+    <div class="admin-section" style="margin-top:12px">
+      <div class="admin-section-title">Exportar datos</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Descarga todos los puntos en formato JSON.</p>
+      <button onclick="exportData()" class="btn-secondary btn-sm">📥 Exportar JSON</button>
     </div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy,
-           serverTimestamp, doc, updateDoc, deleteDoc, getDoc, setDoc }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  // Cloudinary config
-  const CLOUDINARY_CLOUD = 'dfkfaae4l';
-  const CLOUDINARY_PRESET = 'riolasilla_uploads';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut,
+         onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         updateProfile, sendEmailVerification }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy,
+         serverTimestamp, doc, updateDoc, deleteDoc, getDoc, setDoc, getDocs,
+         where, arrayUnion }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDZCv1BsUFiy6JxUFpCmd8fV3biRKmp1XI",
-    authDomain: "rio-la-silla-comunidad.firebaseapp.com",
-    projectId: "rio-la-silla-comunidad",
-    storageBucket: "rio-la-silla-comunidad.firebasestorage.app",
-    messagingSenderId: "911759383073",
-    appId: "1:911759383073:web:a8ac1748ac62abc115a160"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyDZCv1BsUFiy6JxUFpCmd8fV3biRKmp1XI",
+  authDomain: "rio-la-silla-comunidad.firebaseapp.com",
+  projectId: "rio-la-silla-comunidad",
+  storageBucket: "rio-la-silla-comunidad.firebasestorage.app",
+  messagingSenderId: "911759383073",
+  appId: "1:911759383073:web:a8ac1748ac62abc115a160"
+};
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-  const provider = new GoogleAuthProvider();
+const CLOUDINARY_CLOUD = 'dfkfaae4l';
+const CLOUDINARY_PRESET = 'riolasilla_uploads';
+const ADMIN_UIDS = ['B25MIYOUPEZ1wEwXUCddDxAOzxh1'];
 
-  async function uploadToCloudinary(file, type) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
-    formData.append('folder', 'riolasilla');
-    const resourceType = type === 'audio' ? 'video' : type === 'doc' ? 'raw' : 'image';
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`, {
-      method: 'POST', body: formData
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    return data.secure_url;
-  }
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-  // ── ADMIN UIDs ── agrega tu UID aquí después del primer login
-  const ADMIN_UIDS = ['B25MIYOUPEZ1wEwXUCddDxAOzxh1'];
+const CATS = {
+  arte:            { label:'🎨 Arte y belleza',      color:'#E91E8C' },
+  comunidad:       { label:'🤝 Comunidad',           color:'#9C27B0' },
+  denuncia:        { label:'🚨 Denuncia',            color:'#F44336' },
+  deporte:         { label:'⚽ Deporte',             color:'#FF9800' },
+  educacion:       { label:'📚 Educación',           color:'#2196F3' },
+  flora:           { label:'🦋 Flora/Fauna/Agua',    color:'#4CAF50' },
+  historia:        { label:'📖 Historia',            color:'#795548' },
+  infraestructura: { label:'🏗️ Infraestructura',    color:'#607D8B' },
+  mascotas:        { label:'🐾 Mascotas',            color:'#FF5722' },
+  mobiliario:      { label:'🪑 Mobiliario Urbano',   color:'#00BCD4' },
+};
 
-  let currentUser = null;
-  let isAdmin = false;
-  let pendingLatLng = null;
-  let allPosts = [];
-  let currentCat = 'all';
-  let searchText = '';
-  let markers = {};
-  let currentPostId = null;
-  let pendingRating = 0;
+// ── STATE ──
+let currentUser = null, isAdmin = false, isMod = false;
+let allPosts = [], currentCat = null, searchMode = false;
+let currentPostId = null, editingPostId = null;
+let pendingLatLng = null, movingPostId = null;
+let pendingRating = 0, tempRating = 0;
+let msgToUid = null, msgToName = null, activeThreadId = null;
+let fileData = { photo: null, audio: null, doc: null };
+let existingUrls = { photoURL: null, audioURL: null, docURL: null };
+let clusterGroup, map, tempMarker;
+let moderators = [];
 
-  const CATS = {
-    arte:           { label: '🎨 Arte y belleza',        color: '#E91E8C' },
-    comunidad:      { label: '🤝 Comunidad',             color: '#9C27B0' },
-    denuncia:       { label: '🚨 Denuncia',              color: '#F44336' },
-    deporte:        { label: '⚽ Deporte',               color: '#FF9800' },
-    educacion:      { label: '📚 Educación',             color: '#2196F3' },
-    flora:          { label: '🦋 Flora/Fauna/Agua',      color: '#4CAF50' },
-    historia:       { label: '📖 Historia',              color: '#795548' },
-    infraestructura:{ label: '🏗️ Infraestructura',      color: '#607D8B' },
-    mascotas:       { label: '🐾 Mascotas',              color: '#FF5722' },
-    mobiliario:     { label: '🪑 Mobiliario Urbano',     color: '#00BCD4' },
-  };
+// ── MAP SETUP ──
+map = L.map('map', { zoomControl: true }).setView([25.6560, -100.2260], 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom:19
+}).addTo(map);
 
-  // ── AUTH ──
-  window.signInGoogle = async () => {
-    try { await signInWithPopup(auth, provider); }
-    catch(e) { console.error(e); }
-  };
-  window.signOut = () => signOut(auth);
+clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50, showCoverageOnHover: false });
+map.addLayer(clusterGroup);
 
-  onAuthStateChanged(auth, user => {
-    currentUser = user;
-    isAdmin = user && ADMIN_UIDS.includes(user.uid);
-    if (user) {
-      document.getElementById('btn-login').classList.add('hidden');
-      document.getElementById('user-info').classList.remove('hidden');
-      document.getElementById('user-avatar').src = user.photoURL || '';
-      document.getElementById('user-name').textContent = user.displayName?.split(' ')[0] || '';
-      document.getElementById('hint-text').textContent = 'Haz clic en el mapa para publicar';
-      if (isAdmin) document.getElementById('admin-badge').classList.remove('hidden');
-      // Mostrar posts pendientes si es admin
-      renderFeed();
-      renderMarkers();
-    } else {
-      document.getElementById('btn-login').classList.remove('hidden');
-      document.getElementById('user-info').classList.add('hidden');
-      document.getElementById('admin-badge').classList.add('hidden');
-      document.getElementById('hint-text').textContent = 'Inicia sesión para publicar';
-      renderFeed();
-      renderMarkers();
-    }
-  });
-
-  // ── MAP ──
-  const map = L.map('map', { zoomControl: true }).setView([25.6560, -100.2260], 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom: 19
+fetch('rio_overlay.geojson').then(r=>r.json()).then(data=>{
+  L.geoJSON(data,{
+    style: f=>{
+      const p=f.properties;
+      if(p.waterway==='river') return{color:'#1D9E75',weight:3,opacity:0.8};
+      if(p.waterway==='stream') return{color:'#5DCAA5',weight:1.5,opacity:0.6};
+      if(p.leisure==='park') return{color:'#639922',weight:1,fillColor:'#639922',fillOpacity:0.07};
+      return{color:'#aaa',weight:1,opacity:0.2};
+    },
+    onEachFeature:(f,l)=>{ if(f.properties.name) l.bindPopup(f.properties.name); }
   }).addTo(map);
+});
 
-  fetch('rio_overlay.geojson').then(r => r.json()).then(data => {
-    L.geoJSON(data, {
-      style: f => {
-        const p = f.properties;
-        if (p.waterway === 'river') return { color: '#1D9E75', weight: 3, opacity: 0.8 };
-        if (p.waterway === 'stream') return { color: '#5DCAA5', weight: 1.5, opacity: 0.6 };
-        if (p.leisure === 'park') return { color: '#639922', weight: 1, fillColor: '#639922', fillOpacity: 0.08 };
-        return { color: '#aaa', weight: 1, opacity: 0.2 };
-      },
-      onEachFeature: (f, l) => { if (f.properties.name) l.bindPopup(f.properties.name); }
-    }).addTo(map);
-  });
+// Map click for publishing / moving
+map.on('click', e=>{
+  if(movingPostId) { finishMove(e.latlng); return; }
+  if(document.getElementById('publish-modal').classList.contains('hidden')) return;
+  setPendingLocation(e.latlng.lat, e.latlng.lng);
+});
 
-  // Clic en mapa
-  let tempMarker = null;
-  map.on('click', e => {
-    if (!currentUser) {
-      document.getElementById('hint-text').textContent = '⚠️ Inicia sesión primero';
-      setTimeout(() => document.getElementById('hint-text').textContent = 'Haz clic en el mapa para publicar', 2000);
-      return;
-    }
-    setPendingLocation(e.latlng.lat, e.latlng.lng);
-    document.getElementById('modal-overlay').classList.remove('hidden');
-  });
+function setPendingLocation(lat, lng) {
+  pendingLatLng = {lat, lng};
+  document.getElementById('pub-coords').textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  if(tempMarker) map.removeLayer(tempMarker);
+  tempMarker = L.marker([lat,lng]).addTo(map);
+}
 
-  function setPendingLocation(lat, lng) {
-    pendingLatLng = { lat, lng };
-    document.getElementById('modal-coords').textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    if (tempMarker) map.removeLayer(tempMarker);
-    tempMarker = L.marker([lat, lng]).addTo(map);
-  }
-
-  // Coords manuales
-  window.toggleCoordsInput = () => {
-    document.getElementById('coords-input-row').classList.toggle('hidden');
-  };
-  window.applyManualCoords = () => {
-    const val = document.getElementById('coords-manual').value.trim();
-    const parts = val.split(',').map(s => parseFloat(s.trim()));
-    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-      setPendingLocation(parts[0], parts[1]);
-      map.setView([parts[0], parts[1]], 16);
-      document.getElementById('coords-input-row').classList.add('hidden');
-    } else {
-      alert('Formato incorrecto. Usa: 25.65600, -100.22600');
-    }
-  };
-
-  // ── ARCHIVOS ──
-  const fileLimits = { photo: 5, audio: 10, doc: 5 };
-  const fileData = { photo: null, audio: null, doc: null };
-
-  window.previewFile = (type) => {
-    const input = document.getElementById(`file-${type}`);
-    const file = input.files[0];
-    if (!file) return;
-    const maxMB = fileLimits[type];
-    if (file.size > maxMB * 1024 * 1024) {
-      alert(`El archivo supera el límite de ${maxMB}MB.`);
-      input.value = '';
-      return;
-    }
-    fileData[type] = file;
-    renderPreviews();
-  };
-
-  function renderPreviews() {
-    const div = document.getElementById('attach-previews');
-    let html = '';
-    if (fileData.photo) html += `<div class="preview-item">📷 ${fileData.photo.name} <button onclick="clearFile('photo')">✕</button></div>`;
-    if (fileData.audio) html += `<div class="preview-item">🎵 ${fileData.audio.name} <button onclick="clearFile('audio')">✕</button></div>`;
-    if (fileData.doc)   html += `<div class="preview-item">📄 ${fileData.doc.name} <button onclick="clearFile('doc')">✕</button></div>`;
-    div.innerHTML = html;
-  }
-
-  window.clearFile = (type) => {
-    fileData[type] = null;
-    document.getElementById(`file-${type}`).value = '';
-    renderPreviews();
-  };
-
-  async function uploadFile(file, postId, type) {
-    return uploadToCloudinary(file, type);
-  }
-
-  // ── PUBLICAR ──
-  window.publicar = async () => {
-    const text = document.getElementById('pub-text').value.trim();
-    const cat = document.getElementById('pub-cat').value;
-    if (!text) { alert('Escribe un mensaje.'); return; }
-    if (!pendingLatLng) { alert('Selecciona una ubicación en el mapa.'); return; }
-
-    const btn = document.getElementById('btn-publicar');
-    btn.textContent = 'Publicando...'; btn.disabled = true;
-
-    try {
-      // Crear documento primero para obtener ID
-      const docRef = await addDoc(collection(db, 'posts'), {
-        text, cat,
-        lat: pendingLatLng.lat,
-        lng: pendingLatLng.lng,
-        uid: currentUser.uid,
-        userName: currentUser.displayName,
-        userPhoto: currentUser.photoURL || '',
-        createdAt: serverTimestamp(),
-        approved: isAdmin, // admin publica directo, otros esperan moderación
-        photoURL: null, audioURL: null, docURL: null,
-        ratings: {}, ratingAvg: 0, ratingCount: 0
-      });
-
-      // Subir archivos si existen
-      const updates = {};
-      if (fileData.photo) updates.photoURL = await uploadFile(fileData.photo, docRef.id, 'photo');
-      if (fileData.audio) updates.audioURL = await uploadFile(fileData.audio, docRef.id, 'audio');
-      if (fileData.doc)   updates.docURL   = await uploadFile(fileData.doc,   docRef.id, 'doc');
-      if (Object.keys(updates).length) await updateDoc(docRef, updates);
-
-      // Reset
-      document.getElementById('pub-text').value = '';
-      fileData.photo = fileData.audio = fileData.doc = null;
-      renderPreviews();
-      closeModalBtn();
-      if (!isAdmin) alert('✅ Publicación enviada. El administrador la revisará antes de publicarla.');
-    } catch(e) {
-      alert('Error: ' + e.message);
-    } finally {
-      btn.textContent = 'Publicar'; btn.disabled = false;
-    }
-  };
-
-  // ── LEER POSTS ──
-  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-  onSnapshot(q, snapshot => {
-    allPosts = [];
-    snapshot.forEach(d => allPosts.push({ id: d.id, ...d.data() }));
-    applyFilters();
-  });
-
-  // ── FILTROS ──
-  window.filterCat = cat => {
-    currentCat = cat;
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
-    applyFilters();
-  };
-
-  window.applyFilters = () => {
-    searchText = document.getElementById('search-input')?.value.toLowerCase() || '';
-    let visible = allPosts.filter(p => {
-      if (!p.approved && !isAdmin) return false; // ocultar no aprobados a usuarios normales
-      if (currentCat !== 'all' && p.cat !== currentCat) return false;
-      if (searchText && !p.text?.toLowerCase().includes(searchText)) return false;
-      return true;
-    });
-    renderFeed(visible);
-    renderMarkers(visible);
-  };
-
-  function makeIcon(cat) {
-    const color = CATS[cat]?.color || '#888';
+// ── PIN ICONS ──
+function makeIcon(cat, photoURL) {
+  const color = CATS[cat]?.color || '#888';
+  if(photoURL) {
     return L.divIcon({
-      className: '',
-      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
-      iconSize: [14,14], iconAnchor: [7,7]
+      className:'',
+      html:`<div style="width:36px;height:36px;border-radius:50%;border:3px solid ${color};overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.3);background:#fff"><img src="${photoURL}" style="width:100%;height:100%;object-fit:cover"/></div>`,
+      iconSize:[36,36], iconAnchor:[18,18]
     });
   }
+  return L.divIcon({
+    className:'',
+    html:`<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 0C6.27 0 0 6.27 0 14c0 9.625 14 22 14 22s14-12.375 14-22C28 6.27 21.73 0 14 0z" fill="${color}"/>
+      <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
+    </svg>`,
+    iconSize:[28,36], iconAnchor:[14,36]
+  });
+}
 
-  function renderMarkers(visible) {
-    if (!visible) visible = allPosts;
-    Object.values(markers).forEach(m => map.removeLayer(m));
-    markers = {};
-    visible.forEach(post => {
-      if (!post.lat) return;
-      const m = L.marker([post.lat, post.lng], { icon: makeIcon(post.cat) }).addTo(map);
-      const label = CATS[post.cat]?.label || post.cat;
-      m.bindPopup(`<b>${label}</b><br><small>${post.text?.substring(0,80)}...</small><br><a href="#" onclick="openPostModal('${post.id}')">Ver más</a>`);
-      markers[post.id] = m;
-    });
-  }
+// ── AUTH ──
+window.signInGoogle = async()=>{
+  try{ await signInWithPopup(auth,provider); closeAuthModal(); }
+  catch(e){ console.error(e); }
+};
+window.signOut = ()=>fbSignOut(auth);
 
-  function renderFeed(visible) {
-    if (!visible) visible = allPosts;
-    const feed = document.getElementById('feed');
-    if (!visible.length) {
-      feed.innerHTML = '<p class="empty-msg">No hay publicaciones.</p>';
-      return;
+window.signInEmail = async()=>{
+  const email=document.getElementById('login-email').value.trim();
+  const pw=document.getElementById('login-password').value;
+  const err=document.getElementById('login-error');
+  try{
+    await signInWithEmailAndPassword(auth,email,pw);
+    if(!auth.currentUser.emailVerified){
+      err.textContent='Verifica tu correo antes de entrar.';
+      fbSignOut(auth); return;
     }
-    feed.innerHTML = visible.map(p => {
-      const ts = p.createdAt?.toDate ? timeAgo(p.createdAt.toDate()) : 'ahora';
-      const label = CATS[p.cat]?.label || p.cat;
-      const color = CATS[p.cat]?.color || '#888';
-      const stars = p.ratingAvg ? '★'.repeat(Math.round(p.ratingAvg)) + `<small> ${p.ratingAvg.toFixed(1)}</small>` : '';
-      const pendiente = !p.approved ? '<span class="badge-pending">Pendiente</span>' : '';
-      return `
-        <div class="post-card" onclick="openPostModal('${p.id}')">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-            <span class="cat-dot" style="background:${color}"></span>
-            <span style="font-size:11px;font-weight:500;color:${color}">${label}</span>
-            ${pendiente}
-          </div>
-          <p class="post-text">${p.text?.substring(0,100)}${p.text?.length > 100 ? '…' : ''}</p>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-            <p class="post-meta">${p.userName} · ${ts}</p>
-            <span style="color:#f59e0b;font-size:12px">${stars}</span>
-          </div>
+    closeAuthModal();
+  }catch(e){ err.textContent=e.message; }
+};
+
+window.registerEmail = async()=>{
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pw=document.getElementById('reg-password').value;
+  const terms=document.getElementById('terms-check').checked;
+  const err=document.getElementById('reg-error');
+  if(!terms){ err.textContent='Debes aceptar los términos de uso.'; return; }
+  if(!name){ err.textContent='Escribe tu nombre.'; return; }
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pw);
+    await updateProfile(cred.user,{displayName:name});
+    await sendEmailVerification(cred.user);
+    await fbSignOut(auth);
+    err.style.color='var(--green)';
+    err.textContent='¡Cuenta creada! Revisa tu correo para verificar.';
+  }catch(e){ err.textContent=e.message; }
+};
+
+window.switchTab = tab=>{
+  document.getElementById('auth-login-form').classList.toggle('hidden', tab==='register');
+  document.getElementById('auth-register-form').classList.toggle('hidden', tab==='login');
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+};
+
+onAuthStateChanged(auth, async user=>{
+  currentUser = user;
+  isAdmin = user && ADMIN_UIDS.includes(user.uid);
+  isMod = false;
+
+  if(user){
+    // Check moderator status
+    const modDoc = await getDoc(doc(db,'moderators',user.email||''));
+    isMod = modDoc.exists() && !isAdmin;
+
+    document.getElementById('btn-login').classList.add('hidden');
+    document.getElementById('user-info').classList.remove('hidden');
+    document.getElementById('btn-publish').classList.remove('hidden');
+    document.getElementById('user-avatar').src = user.photoURL||'';
+    document.getElementById('user-name').textContent = user.displayName?.split(' ')[0]||'';
+    document.getElementById('badge-admin').classList.toggle('hidden',!isAdmin);
+    document.getElementById('badge-mod').classList.toggle('hidden',!isMod);
+    subscribeMessages();
+    if(isAdmin) loadModerators();
+  } else {
+    document.getElementById('btn-login').classList.remove('hidden');
+    document.getElementById('user-info').classList.add('hidden');
+    document.getElementById('btn-publish').classList.add('hidden');
+  }
+  renderSidebar();
+  renderMarkers();
+});
+
+// ── FIRESTORE ──
+const postsQ = query(collection(db,'posts'), orderBy('createdAt','desc'));
+onSnapshot(postsQ, snap=>{
+  allPosts=[];
+  snap.forEach(d=>allPosts.push({id:d.id,...d.data()}));
+  renderSidebar();
+  renderMarkers();
+  if(currentPostId){ const p=allPosts.find(x=>x.id===currentPostId); if(p) renderDetail(p); }
+});
+
+// ── SIDEBAR ──
+function renderSidebar(){
+  const approved = allPosts.filter(p=>p.approved);
+  const pending  = allPosts.filter(p=>!p.approved);
+  const counts   = {};
+  Object.keys(CATS).forEach(k=>{ counts[k]=approved.filter(p=>p.cat===k).length; });
+
+  let html=`
+    <div class="cat-item ${!currentCat&&!searchMode?'active':''}" onclick="selectCat(null)">
+      <span class="cat-label">Todas</span>
+      <span class="cat-count">${approved.length}</span>
+    </div>`;
+
+  Object.entries(CATS).forEach(([k,v])=>{
+    html+=`<div class="cat-item ${currentCat===k?'active':''}" onclick="selectCat('${k}')">
+      <span class="cat-dot-sm" style="background:${v.color}"></span>
+      <span class="cat-label">${v.label}</span>
+      <span class="cat-count">${counts[k]}</span>
+    </div>`;
+  });
+
+  if(isAdmin||isMod){
+    html+=`<div class="sidebar-divider"></div>
+      <div class="cat-item cat-pending ${currentCat==='__pending'?'active':''}" onclick="selectCat('__pending')">
+        <span class="cat-label">⏳ Pendientes</span>
+        <span class="cat-count">${pending.length}</span>
+      </div>
+      <div class="cat-item cat-reports ${currentCat==='__reports'?'active':''}" onclick="selectCat('__reports')">
+        <span class="cat-label">🚩 Reportes</span>
+        <span class="cat-count" id="reports-count">…</span>
+      </div>`;
+    if(isAdmin){
+      html+=`<div class="sidebar-divider"></div>
+        <div class="cat-item" onclick="openAdminModal()">
+          <span class="cat-label">⚙️ Administración</span>
         </div>`;
+    }
+  }
+  document.getElementById('cat-list').innerHTML=html;
+  loadReportCount();
+}
+
+async function loadReportCount(){
+  if(!isAdmin&&!isMod) return;
+  const snap=await getDocs(collection(db,'reports'));
+  const open=snap.docs.filter(d=>!d.data().resolved).length;
+  const el=document.getElementById('reports-count');
+  if(el) el.textContent=open;
+}
+
+window.selectCat = cat=>{
+  currentCat=cat; searchMode=false;
+  document.getElementById('search-input').value='';
+  if(cat==='__reports'){ showReportsList(); return; }
+  const list = cat===null ? allPosts.filter(p=>p.approved)
+    : cat==='__pending' ? allPosts.filter(p=>!p.approved)
+    : allPosts.filter(p=>p.approved&&p.cat===cat);
+  showResultsPanel(cat?( CATS[cat]?.label||cat ):'Todas las publicaciones', list);
+  renderMarkers();
+  renderSidebar();
+};
+
+window.handleSearch = ()=>{
+  const q=document.getElementById('search-input').value.toLowerCase().trim();
+  if(!q){ searchMode=false; closeResults(); renderSidebar(); return; }
+  searchMode=true; currentCat=null;
+  const list=allPosts.filter(p=>p.approved&&p.text?.toLowerCase().includes(q));
+  showResultsPanel(`Resultados: "${q}"`, list);
+  renderSidebar();
+};
+
+// ── RESULTS PANEL ──
+function showResultsPanel(title, posts){
+  document.getElementById('results-title').textContent=title;
+  const list=document.getElementById('results-list');
+  if(!posts.length){ list.innerHTML='<p style="padding:16px;font-size:13px;color:var(--muted)">Sin resultados.</p>'; }
+  else{
+    list.innerHTML=posts.map(p=>{
+      const ts=p.createdAt?.toDate?timeAgo(p.createdAt.toDate()):'';
+      const c=CATS[p.cat]||{label:p.cat,color:'#888'};
+      const stars=p.ratingAvg?'★'.repeat(Math.round(p.ratingAvg)):'';
+      const pend=!p.approved?'<span class="badge-pending-sm">Pendiente</span>':'';
+      return`<div class="post-card" onclick="openDetail('${p.id}')">
+        <div class="post-card-top">
+          <span class="cat-dot-sm" style="background:${c.color}"></span>
+          <span class="post-cat-label" style="color:${c.color}">${c.label}</span>
+          ${pend}
+        </div>
+        <p class="post-text">${p.text?.substring(0,90)}${p.text?.length>90?'…':''}</p>
+        <div class="post-meta"><span>${p.userName}·${ts}</span><span class="post-stars">${stars}</span></div>
+      </div>`;
     }).join('');
   }
+  document.getElementById('results-panel').classList.add('open');
+}
 
-  // ── VER POST DETALLE ──
-  window.openPostModal = (id) => {
-    currentPostId = id;
-    const p = allPosts.find(x => x.id === id);
-    if (!p) return;
-    const label = CATS[p.cat]?.label || p.cat;
-    const color = CATS[p.cat]?.color || '#888';
-    const ts = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' }) : '';
+window.closeResults = ()=>{
+  document.getElementById('results-panel').classList.remove('open');
+};
 
-    document.getElementById('pm-cat-badge').textContent = label;
-    document.getElementById('pm-cat-badge').style.background = color + '22';
-    document.getElementById('pm-cat-badge').style.color = color;
-    document.getElementById('pm-title').textContent = '';
-    document.getElementById('pm-meta').textContent = `${p.userName} · ${ts}`;
-    document.getElementById('pm-text').textContent = p.text;
+// ── MARKERS ──
+function renderMarkers(){
+  clusterGroup.clearLayers();
+  const visible = allPosts.filter(p=>{
+    if(!p.approved && !(isAdmin||isMod)) return false;
+    if(!p.lat) return false;
+    return true;
+  });
+  visible.forEach(post=>{
+    const m=L.marker([post.lat,post.lng],{icon:makeIcon(post.cat,post.photoURL)});
+    m.on('click',()=>openDetail(post.id));
+    clusterGroup.addLayer(m);
+  });
+}
 
-    // Media
-    let mediaHTML = '';
-    if (p.photoURL) mediaHTML += `<img src="${p.photoURL}" style="max-width:100%;border-radius:8px;margin-bottom:8px" />`;
-    if (p.audioURL) mediaHTML += `<audio controls src="${p.audioURL}" style="width:100%;margin-bottom:8px"></audio>`;
-    if (p.docURL)   mediaHTML += `<a href="${p.docURL}" target="_blank" class="btn-secondary btn-sm">📄 Ver documento</a>`;
-    document.getElementById('pm-media').innerHTML = mediaHTML;
+// ── DETAIL ──
+window.openDetail = id=>{
+  currentPostId=id;
+  const p=allPosts.find(x=>x.id===id);
+  if(!p) return;
+  renderDetail(p);
+  document.getElementById('detail-sheet').classList.add('open');
+  if(p.lat) map.setView([p.lat,p.lng],16);
+};
 
-    // Calificación
-    const avg = p.ratingAvg || 0;
-    const count = p.ratingCount || 0;
-    document.getElementById('pm-stars-display').innerHTML =
-      `${'★'.repeat(Math.round(avg))}${'☆'.repeat(5 - Math.round(avg))} <small>${avg.toFixed(1)} (${count} votos)</small>`;
+function renderDetail(p){
+  const c=CATS[p.cat]||{label:p.cat,color:'#888'};
+  const ts=p.createdAt?.toDate?p.createdAt.toDate().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'}):'';
+  document.getElementById('d-cat').textContent=c.label;
+  document.getElementById('d-cat').style.cssText=`background:${c.color}22;color:${c.color};font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:4px`;
+  document.getElementById('d-user').textContent=`${p.userName} · ${ts}`;
+  document.getElementById('d-text').textContent=p.text||'';
+  document.getElementById('d-coords').textContent=p.lat?`📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`:'';
 
-    const myRating = currentUser && p.ratings ? p.ratings[currentUser.uid] : null;
-    const rateRow = document.getElementById('pm-rate-row');
-    if (currentUser && !myRating) {
-      rateRow.classList.remove('hidden');
-      pendingRating = 0;
-      document.querySelectorAll('#stars-input span').forEach((s, i) => s.style.color = '#ddd');
-    } else {
-      rateRow.classList.add('hidden');
-    }
+  let media='';
+  if(p.photoURL) media+=`<img src="${p.photoURL}" class="detail-img"/>`;
+  if(p.audioURL) media+=`<audio controls src="${p.audioURL}" class="detail-audio"></audio>`;
+  if(p.docURL)   media+=`<a href="${p.docURL}" target="_blank" class="btn-secondary btn-sm" style="margin-bottom:12px;display:inline-block">📄 Ver documento</a>`;
+  document.getElementById('d-media').innerHTML=media;
 
-    // Comentarios
-    renderComments(p.comments || []);
-    document.getElementById('pm-comment-input').classList.toggle('hidden', !currentUser);
+  // Buttons visibility
+  const isOwner = currentUser && p.uid===currentUser.uid;
+  const canEdit = isOwner||isAdmin||isMod;
+  document.getElementById('d-btn-edit').classList.toggle('hidden',!canEdit);
+  document.getElementById('d-btn-delete').classList.toggle('hidden',!canEdit);
+  document.getElementById('d-btn-move').classList.toggle('hidden',!canEdit);
+  document.getElementById('d-btn-msg').classList.toggle('hidden',!currentUser||isOwner);
+  document.getElementById('d-btn-report').classList.toggle('hidden',!currentUser||isOwner);
 
-    // Admin panel
-    document.getElementById('pm-admin-panel').classList.toggle('hidden', !isAdmin);
+  // Admin panel
+  const adminPanel=document.getElementById('d-admin');
+  adminPanel.classList.toggle('hidden',!(isAdmin||isMod));
+  document.getElementById('d-btn-approve').classList.toggle('hidden',p.approved);
+  const reports=p.reports||[];
+  document.getElementById('d-report-count').textContent=reports.length;
 
-    document.getElementById('post-modal-overlay').classList.remove('hidden');
+  // Rating
+  const avg=p.ratingAvg||0, count=p.ratingCount||0;
+  const starsDisplay=document.getElementById('d-stars-display');
+  starsDisplay.innerHTML=`${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}<span class="rating-avg">${avg.toFixed(1)} (${count} votos)</span>`;
+  starsDisplay.style.color='var(--amber)';
 
-    // Foco en mapa
-    if (p.lat && markers[id]) { map.setView([p.lat, p.lng], 16); markers[id].openPopup(); }
-  };
+  const myRating=currentUser&&p.ratings?p.ratings[currentUser.uid]:null;
+  const rateArea=document.getElementById('d-rate-area');
+  rateArea.classList.toggle('hidden',!currentUser||!!myRating);
+  if(currentUser&&!myRating){
+    pendingRating=0;
+    const si=document.getElementById('d-stars-input');
+    si.innerHTML=[1,2,3,4,5].map(n=>`<span class="star" data-n="${n}" onclick="selectRating(${n})">★</span>`).join('');
+  }
 
-  function renderComments(comments) {
-    const div = document.getElementById('pm-comments');
-    if (!comments.length) { div.innerHTML = '<p style="font-size:12px;color:#aaa">Sin comentarios aún.</p>'; return; }
-    div.innerHTML = comments.map(c => `
-      <div class="comment">
+  // Comments
+  renderComments(p);
+  document.getElementById('d-btn-comment').classList.toggle('hidden',!currentUser);
+  document.getElementById('d-comment-form').classList.add('hidden');
+}
+
+function renderComments(p){
+  const comments=p.comments||[];
+  const div=document.getElementById('d-comments');
+  if(!comments.length){ div.innerHTML='<p style="font-size:12px;color:var(--muted)">Sin comentarios aún.</p>'; return; }
+  div.innerHTML=comments.map((c,i)=>{
+    const canDel=currentUser&&(c.uid===currentUser.uid||isAdmin||isMod);
+    return`<div class="comment">
+      <div class="comment-header">
         <span class="comment-user">${c.userName}</span>
-        <span class="comment-text">${c.text}</span>
         <span class="comment-time">${timeAgo(new Date(c.createdAt))}</span>
-      </div>`).join('');
-  }
+      </div>
+      <p class="comment-text">${c.text}</p>
+      <div class="comment-actions">
+        ${currentUser&&c.uid!==currentUser?.uid?`<button class="btn-link" onclick="msgToComment('${c.uid}','${c.userName}')">✉️ Mensaje</button>`:''}
+        ${canDel?`<button class="btn-link" onclick="deleteComment(${i})">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
 
-  window.agregarComentario = async () => {
-    const text = document.getElementById('comment-text').value.trim();
-    if (!text || !currentPostId || !currentUser) return;
-    const p = allPosts.find(x => x.id === currentPostId);
-    const comments = p.comments || [];
-    comments.push({ userName: currentUser.displayName, text, createdAt: Date.now() });
-    await updateDoc(doc(db, 'posts', currentPostId), { comments });
-    document.getElementById('comment-text').value = '';
-  };
+window.closeDetail = ()=>{
+  document.getElementById('detail-sheet').classList.remove('open');
+  currentPostId=null;
+};
 
-  // ── CALIFICACIÓN ──
-  window.setRating = async (stars) => {
-    if (!currentUser || !currentPostId) return;
-    pendingRating = stars;
-    document.querySelectorAll('#stars-input span').forEach((s, i) => {
-      s.style.color = i < stars ? '#f59e0b' : '#ddd';
-    });
-    const p = allPosts.find(x => x.id === currentPostId);
-    const ratings = p.ratings || {};
-    ratings[currentUser.uid] = stars;
-    const vals = Object.values(ratings);
-    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    await updateDoc(doc(db, 'posts', currentPostId), {
-      ratings,
-      ratingAvg: Math.round(avg * 10) / 10,
-      ratingCount: vals.length
-    });
-    document.getElementById('pm-rate-row').classList.add('hidden');
-  };
+// ── APPROVE / DELETE ──
+window.approvePost = async()=>{
+  if(!currentPostId) return;
+  await updateDoc(doc(db,'posts',currentPostId),{approved:true});
+};
 
-  // ── ADMIN ──
-  window.aprobarPost = async () => {
-    if (!isAdmin || !currentPostId) return;
-    await updateDoc(doc(db, 'posts', currentPostId), { approved: true });
-    alert('✅ Publicación aprobada.');
-    closePostModalBtn();
-  };
+window.deletePost = async()=>{
+  if(!currentPostId||!confirm('¿Eliminar esta publicación?')) return;
+  await deleteDoc(doc(db,'posts',currentPostId));
+  closeDetail();
+};
 
-  window.suprimirPost = async () => {
-    if (!isAdmin || !currentPostId) return;
-    if (!confirm('¿Eliminar esta publicación?')) return;
-    await deleteDoc(doc(db, 'posts', currentPostId));
-    closePostModalBtn();
-  };
+window.deleteComment = async(idx)=>{
+  const p=allPosts.find(x=>x.id===currentPostId); if(!p) return;
+  const comments=[...(p.comments||[])];
+  comments.splice(idx,1);
+  await updateDoc(doc(db,'posts',currentPostId),{comments});
+};
 
-  window.closePostModal = e => { if (e.target.id === 'post-modal-overlay') closePostModalBtn(); };
-  window.closePostModalBtn = () => {
-    document.getElementById('post-modal-overlay').classList.add('hidden');
-    currentPostId = null;
-  };
+// ── MOVE POINT ──
+window.startMovePoint = ()=>{
+  movingPostId=currentPostId;
+  closeDetail();
+  map.getContainer().style.cursor='crosshair';
+  const hint=document.createElement('div');
+  hint.id='move-hint';
+  hint.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;z-index:999';
+  hint.textContent='Haz clic en el nuevo punto del mapa';
+  document.body.appendChild(hint);
+};
 
-  window.closeModal = e => { if (e.target.id === 'modal-overlay') closeModalBtn(); };
-  window.closeModalBtn = () => {
-    document.getElementById('modal-overlay').classList.add('hidden');
-    pendingLatLng = null;
-    if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-  };
+async function finishMove(latlng){
+  if(!movingPostId) return;
+  await updateDoc(doc(db,'posts',movingPostId),{lat:latlng.lat,lng:latlng.lng});
+  movingPostId=null;
+  map.getContainer().style.cursor='';
+  const h=document.getElementById('move-hint'); if(h) h.remove();
+}
 
-  window.focusPost = id => {
-    const m = markers[id];
-    if (m) { map.setView(m.getLatLng(), 16); m.openPopup(); }
-  };
+// ── PUBLISH MODAL ──
+window.openPublishModal = ()=>{
+  if(!currentUser){ openAuthModal(); return; }
+  editingPostId=null;
+  pendingLatLng=null;
+  fileData={photo:null,audio:null,doc:null};
+  existingUrls={photoURL:null,audioURL:null,docURL:null};
+  document.getElementById('publish-modal-title').textContent='Nueva publicación';
+  document.getElementById('pub-coords').textContent='📍 Haz clic en el mapa para ubicar';
+  document.getElementById('pub-text').value='';
+  document.getElementById('file-previews').innerHTML='';
+  document.getElementById('publish-modal').classList.remove('hidden');
+};
 
-  function timeAgo(date) {
-    const s = Math.floor((Date.now() - date) / 1000);
-    if (s < 60) return 'ahora';
-    if (s < 3600) return `hace ${Math.floor(s/60)}m`;
-    if (s < 86400) return `hace ${Math.floor(s/3600)}h`;
-    return `hace ${Math.floor(s/86400)}d`;
-  }
+window.openEditModal = ()=>{
+  const p=allPosts.find(x=>x.id===currentPostId); if(!p) return;
+  editingPostId=currentPostId;
+  pendingLatLng={lat:p.lat,lng:p.lng};
+  existingUrls={photoURL:p.photoURL||null,audioURL:p.audioURL||null,docURL:p.docURL||null};
+  fileData={photo:null,audio:null,doc:null};
+  document.getElementById('publish-modal-title').textContent='Editar publicación';
+  document.getElementById('pub-coords').textContent=`📍 ${p.lat?.toFixed(5)}, ${p.lng?.toFixed(5)}`;
+  document.getElementById('pub-text').value=p.text||'';
+  document.getElementById('pub-cat').value=p.cat||'arte';
+  renderFilePreviews();
+  document.getElementById('publish-modal').classList.remove('hidden');
+  closeDetail();
+};
+
+window.closePublishModal = ()=>{
+  document.getElementById('publish-modal').classList.add('hidden');
+  if(tempMarker){ map.removeLayer(tempMarker); tempMarker=null; }
+  pendingLatLng=null; editingPostId=null;
+};
+window.closePublishOnBackdrop = e=>{ if(e.target.id==='publish-modal') closePublishModal(); };
+
+window.toggleManualCoords = ()=>document.getElementById('manual-coords-row').classList.toggle('hidden');
+window.applyManualCoords = ()=>{
+  const val=document.getElementById('manual-coords-input').value.trim();
+  const parts=val.split(',').map(s=>parseFloat(s.trim()));
+  if(parts.length===2&&!isNaN(parts[0])&&!isNaN(parts[1])){
+    setPendingLocation(parts[0],parts[1]);
+    map.setView([parts[0],parts[1]],16);
+    document.getElementById('manual-coords-row').classList.add('hidden');
+  } else alert('Formato incorrecto. Usa: 25.65600, -100.22600');
+};
+
+// ── FILES ──
+window.handleFile = type=>{
+  const input=document.getElementById(`file-${type}`);
+  const file=input.files[0]; if(!file) return;
+  const maxMB={photo:5,audio:10,doc:5}[type];
+  if(file.size>maxMB*1024*1024){ alert(`Máximo ${maxMB}MB.`); input.value=''; return; }
+  fileData[type]=file;
+  renderFilePreviews();
+};
+
+function renderFilePreviews(){
+  const div=document.getElementById('file-previews');
+  let html='';
+  if(fileData.photo) html+=`<div class="preview-item">📷 ${fileData.photo.name}<button onclick="clearFile('photo')">✕</button></div>`;
+  else if(existingUrls.photoURL) html+=`<div class="preview-item">📷 Foto actual <button onclick="clearExisting('photoURL')">✕ Quitar</button></div>`;
+  if(fileData.audio) html+=`<div class="preview-item">🎵 ${fileData.audio.name}<button onclick="clearFile('audio')">✕</button></div>`;
+  else if(existingUrls.audioURL) html+=`<div class="preview-item">🎵 Audio actual <button onclick="clearExisting('audioURL')">✕ Quitar</button></div>`;
+  if(fileData.doc) html+=`<div class="preview-item">📄 ${fileData.doc.name}<button onclick="clearFile('doc')">✕</button></div>`;
+  else if(existingUrls.docURL) html+=`<div class="preview-item">📄 Doc actual <button onclick="clearExisting('docURL')">✕ Quitar</button></div>`;
+  div.innerHTML=html;
+}
+
+window.clearFile = type=>{ fileData[type]=null; document.getElementById(`file-${type}`).value=''; renderFilePreviews(); };
+window.clearExisting = key=>{ existingUrls[key]=null; renderFilePreviews(); };
+
+async function uploadToCloudinary(file,type){
+  const fd=new FormData();
+  fd.append('file',file); fd.append('upload_preset',CLOUDINARY_PRESET); fd.append('folder','riolasilla');
+  const rtype=type==='audio'?'video':type==='doc'?'raw':'image';
+  const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${rtype}/upload`,{method:'POST',body:fd});
+  const data=await res.json();
+  if(data.error) throw new Error(data.error.message);
+  return data.secure_url;
+}
+
+window.submitPost = async()=>{
+  const text=document.getElementById('pub-text').value.trim();
+  const cat=document.getElementById('pub-cat').value;
+  if(!text){ alert('Escribe un mensaje.'); return; }
+  if(!pendingLatLng){ alert('Selecciona una ubicación en el mapa.'); return; }
+  const btn=document.getElementById('btn-submit-post');
+  btn.textContent='Publicando...'; btn.disabled=true;
+  try{
+    let photoURL=existingUrls.photoURL, audioURL=existingUrls.audioURL, docURL=existingUrls.docURL;
+    if(fileData.photo) photoURL=await uploadToCloudinary(fileData.photo,'photo');
+    if(fileData.audio) audioURL=await uploadToCloudinary(fileData.audio,'audio');
+    if(fileData.doc)   docURL=await uploadToCloudinary(fileData.doc,'doc');
+
+    if(editingPostId){
+      await updateDoc(doc(db,'posts',editingPostId),{text,cat,lat:pendingLatLng.lat,lng:pendingLatLng.lng,photoURL,audioURL,docURL});
+    } else {
+      await addDoc(collection(db,'posts'),{
+        text,cat,lat:pendingLatLng.lat,lng:pendingLatLng.lng,
+        uid:currentUser.uid, userName:currentUser.displayName,
+        userPhoto:currentUser.photoURL||'',
+        createdAt:serverTimestamp(),
+        approved:isAdmin||isMod,
+        photoURL,audioURL,docURL,
+        ratings:{},ratingAvg:0,ratingCount:0,comments:[]
+      });
+      if(!isAdmin&&!isMod) alert('✅ Publicación enviada. Será revisada antes de aparecer.');
+    }
+    closePublishModal();
+  }catch(e){ alert('Error: '+e.message); }
+  finally{ btn.textContent=editingPostId?'Guardar':'Publicar'; btn.disabled=false; }
+};
+
+// ── RATING ──
+window.selectRating = n=>{
+  tempRating=n;
+  document.querySelectorAll('#d-stars-input .star').forEach((s,i)=>s.classList.toggle('filled',i<n));
+  const preview=document.getElementById('d-rating-preview');
+  preview.textContent=`Calificarás este punto con ${'★'.repeat(n)} (${n}/5). ¿Confirmas?`;
+  preview.classList.add('show');
+  document.getElementById('d-rating-confirm').classList.remove('hidden');
+};
+
+window.cancelRating = ()=>{
+  tempRating=0;
+  document.querySelectorAll('#d-stars-input .star').forEach(s=>s.classList.remove('filled'));
+  document.getElementById('d-rating-preview').classList.remove('show');
+  document.getElementById('d-rating-confirm').classList.add('hidden');
+};
+
+window.confirmRating = async()=>{
+  if(!tempRating||!currentPostId) return;
+  const p=allPosts.find(x=>x.id===currentPostId); if(!p) return;
+  const ratings={...(p.ratings||{}), [currentUser.uid]:tempRating};
+  const vals=Object.values(ratings);
+  const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+  await updateDoc(doc(db,'posts',currentPostId),{ratings,ratingAvg:Math.round(avg*10)/10,ratingCount:vals.length});
+  document.getElementById('d-rate-area').classList.add('hidden');
+};
+
+// ── COMMENTS ──
+window.openCommentForm = ()=>{
+  document.getElementById('d-comment-form').classList.remove('hidden');
+  document.getElementById('d-btn-comment').classList.add('hidden');
+};
+window.cancelComment = ()=>{
+  document.getElementById('d-comment-form').classList.add('hidden');
+  document.getElementById('d-btn-comment').classList.remove('hidden');
+  document.getElementById('d-comment-text').value='';
+  document.getElementById('d-comment-preview').classList.remove('show');
+};
+window.previewComment = ()=>{
+  const txt=document.getElementById('d-comment-text').value.trim();
+  const prev=document.getElementById('d-comment-preview');
+  if(txt){ prev.textContent=`Vista previa: "${txt}"`; prev.classList.add('show'); }
+  else prev.classList.remove('show');
+};
+window.submitComment = async()=>{
+  const text=document.getElementById('d-comment-text').value.trim();
+  if(!text||!currentPostId) return;
+  const p=allPosts.find(x=>x.id===currentPostId);
+  const comments=[...(p.comments||[]),{uid:currentUser.uid,userName:currentUser.displayName,text,createdAt:Date.now()}];
+  await updateDoc(doc(db,'posts',currentPostId),{comments});
+  cancelComment();
+};
+
+// ── REPORTS ──
+window.reportPost = async()=>{
+  if(!currentUser||!currentPostId) return;
+  const reason=prompt('Describe brevemente el problema:');
+  if(!reason) return;
+  await addDoc(collection(db,'reports'),{
+    postId:currentPostId,
+    reportedBy:currentUser.uid,
+    reporterName:currentUser.displayName,
+    reason, resolved:false,
+    createdAt:serverTimestamp()
+  });
+  alert('Reporte enviado. El equipo de moderación lo revisará.');
+};
+
+async function showReportsList(){
+  const snap=await getDocs(collection(db,'reports'));
+  const reports=snap.docs.filter(d=>!d.data().resolved).map(d=>({id:d.id,...d.data()}));
+  const posts=allPosts;
+  const items=reports.map(r=>{
+    const p=posts.find(x=>x.id===r.postId);
+    return`<div class="report-item">
+      <div class="report-item-header">
+        <strong style="font-size:12px">${r.reporterName}</strong>
+        <button class="btn-primary btn-sm" onclick="resolveReport('${r.id}','${r.postId}')">Resuelto</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted)">${r.reason}</p>
+      ${p?`<p style="font-size:11px;color:var(--muted)">Punto: "${p.text?.substring(0,40)}…" <button class="btn-link" onclick="openDetail('${p.id}')">Ver</button></p>`:''}
+    </div>`;
+  }).join('');
+  showResultsPanel(`🚩 Reportes (${reports.length})`, []);
+  document.getElementById('results-list').innerHTML=items||'<p style="padding:16px;font-size:13px;color:var(--muted)">Sin reportes abiertos.</p>';
+}
+
+window.resolveReport = async(rId,postId)=>{
+  await updateDoc(doc(db,'reports',rId),{resolved:true});
+  showReportsList();
+  loadReportCount();
+};
+
+window.showPostReports = ()=>{ currentCat='__reports'; showReportsList(); };
+
+// ── MESSAGES ──
+let allConversations=[];
+
+function subscribeMessages(){
+  if(!currentUser) return;
+  const q1=query(collection(db,'messages'),where('toUid','==',currentUser.uid),orderBy('createdAt','desc'));
+  onSnapshot(q1,snap=>{
+    const unread=snap.docs.filter(d=>!d.data().read).length;
+    const cnt=document.getElementById('msg-count');
+    cnt.textContent=unread; cnt.classList.toggle('hidden',unread===0);
+    buildInbox(snap.docs.map(d=>({id:d.id,...d.data()})));
+  });
+}
+
+function buildInbox(msgs){
+  const threads={};
+  msgs.forEach(m=>{
+    const key=[m.fromUid,m.toUid].sort().join('_');
+    if(!threads[key]) threads[key]={msgs:[],other:m.fromUid===currentUser.uid?{uid:m.toUid,name:m.toName}:{uid:m.fromUid,name:m.fromName}};
+    threads[key].msgs.push(m);
+  });
+  allConversations=Object.values(threads);
+  renderInbox();
+}
+
+function renderInbox(){
+  const div=document.getElementById('msg-inbox');
+  if(!allConversations.length){ div.innerHTML='<p style="padding:16px;font-size:13px;color:var(--muted)">Sin mensajes.</p>'; return; }
+  div.innerHTML=allConversations.map((t,i)=>{
+    const last=t.msgs[0];
+    const unread=t.msgs.filter(m=>!m.read&&m.toUid===currentUser.uid).length;
+    return`<div class="msg-item ${unread?'unread':''}" onclick="openThread(${i})">
+      <div class="msg-avatar">${t.other.name?.charAt(0)||'?'}</div>
+      <div class="msg-info">
+        <div class="msg-from">${t.other.name}</div>
+        <div class="msg-preview">${last?.text||''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="msg-time">${last?.createdAt?.toDate?timeAgo(last.createdAt.toDate()):''}</span>
+        ${unread?`<span class="msg-count" style="position:static">${unread}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openThread = async i=>{
+  const t=allConversations[i];
+  activeThreadId=i;
+  msgToUid=t.other.uid; msgToName=t.other.name;
+  document.getElementById('msg-win-title').textContent=t.other.name;
+  document.getElementById('msg-back').classList.remove('hidden');
+  document.getElementById('msg-inbox').classList.add('hidden');
+  const tv=document.getElementById('msg-thread-view');
+  tv.style.display='flex';
+
+  // Load full thread
+  const q=query(collection(db,'messages'),where('participants','array-contains',currentUser.uid),orderBy('createdAt','asc'));
+  const snap=await getDocs(q);
+  const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(m=>m.participants.includes(msgToUid));
+
+  document.getElementById('msg-thread').innerHTML=msgs.map(m=>`
+    <div>
+      <div class="msg-bubble ${m.fromUid===currentUser.uid?'mine':'theirs'}">${m.text}</div>
+    </div>`).join('');
+
+  // Mark as read
+  msgs.filter(m=>m.toUid===currentUser.uid&&!m.read).forEach(m=>updateDoc(doc(db,'messages',m.id),{read:true}));
+};
+
+window.showInbox = ()=>{
+  document.getElementById('msg-win-title').textContent='Mensajes';
+  document.getElementById('msg-back').classList.add('hidden');
+  document.getElementById('msg-inbox').classList.remove('hidden');
+  document.getElementById('msg-thread-view').style.display='none';
+  activeThreadId=null;
+};
+
+window.sendReply = async()=>{
+  const text=document.getElementById('msg-reply-text').value.trim();
+  if(!text||!msgToUid) return;
+  await addDoc(collection(db,'messages'),{
+    fromUid:currentUser.uid, fromName:currentUser.displayName,
+    toUid:msgToUid, toName:msgToName,
+    text, read:false, createdAt:serverTimestamp(),
+    participants:[currentUser.uid,msgToUid]
+  });
+  document.getElementById('msg-reply-text').value='';
+  openThread(activeThreadId);
+};
+
+window.toggleMessages = ()=>document.getElementById('msg-window').classList.toggle('open');
+
+// New message modal
+window.msgToPostOwner = ()=>{
+  const p=allPosts.find(x=>x.id===currentPostId); if(!p||!currentUser) return;
+  msgToUid=p.uid; msgToName=p.userName;
+  document.getElementById('new-msg-to-name').textContent=p.userName;
+  document.getElementById('new-msg-text').value='';
+  document.getElementById('new-msg-modal').classList.remove('hidden');
+};
+
+window.msgToComment = (uid,name)=>{
+  msgToUid=uid; msgToName=name;
+  document.getElementById('new-msg-to-name').textContent=name;
+  document.getElementById('new-msg-text').value='';
+  document.getElementById('new-msg-modal').classList.remove('hidden');
+};
+
+window.sendNewMessage = async()=>{
+  const text=document.getElementById('new-msg-text').value.trim();
+  if(!text||!msgToUid) return;
+  await addDoc(collection(db,'messages'),{
+    fromUid:currentUser.uid, fromName:currentUser.displayName,
+    toUid:msgToUid, toName:msgToName,
+    text, read:false, createdAt:serverTimestamp(),
+    participants:[currentUser.uid,msgToUid]
+  });
+  closeNewMsgModal();
+  alert('Mensaje enviado.');
+};
+
+window.closeNewMsgModal = ()=>document.getElementById('new-msg-modal').classList.add('hidden');
+window.closeNewMsgOnBackdrop = e=>{ if(e.target.id==='new-msg-modal') closeNewMsgModal(); };
+
+// ── AUTH MODAL ──
+window.openAuthModal = ()=>document.getElementById('auth-modal').classList.remove('hidden');
+window.closeAuthModal = ()=>document.getElementById('auth-modal').classList.add('hidden');
+window.closeAuthOnBackdrop = e=>{ if(e.target.id==='auth-modal') closeAuthModal(); };
+
+// ── ADMIN ──
+async function loadModerators(){
+  const snap=await getDocs(collection(db,'moderators'));
+  moderators=snap.docs.map(d=>({email:d.id,...d.data()}));
+}
+
+window.openAdminModal = ()=>{
+  renderModList();
+  document.getElementById('admin-modal').classList.remove('hidden');
+};
+window.closeAdminModal = ()=>document.getElementById('admin-modal').classList.add('hidden');
+window.closeAdminOnBackdrop = e=>{ if(e.target.id==='admin-modal') closeAdminModal(); };
+
+window.addModerator = async()=>{
+  const email=document.getElementById('mod-email-input').value.trim().toLowerCase();
+  if(!email){ alert('Escribe un correo.'); return; }
+  await setDoc(doc(db,'moderators',email),{addedBy:currentUser.uid,addedAt:serverTimestamp()});
+  await loadModerators();
+  renderModList();
+  document.getElementById('mod-email-input').value='';
+};
+
+function renderModList(){
+  document.getElementById('mod-list').innerHTML=moderators.map(m=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span>${m.email}</span>
+      <button class="btn-link" onclick="removeModerator('${m.email}')">🗑️</button>
+    </div>`).join('')||'<p style="font-size:12px;color:var(--muted)">Sin moderadores.</p>';
+}
+
+window.removeModerator = async email=>{
+  await deleteDoc(doc(db,'moderators',email));
+  await loadModerators();
+  renderModList();
+};
+
+window.exportData = async()=>{
+  const snap=await getDocs(collection(db,'posts'));
+  const data=snap.docs.map(d=>({id:d.id,...d.data(),createdAt:d.data().createdAt?.toDate?.()?.toISOString()}));
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`rio-la-silla-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+};
+
+// ── MOBILE SIDEBAR ──
+window.toggleMobileSidebar = ()=>document.getElementById('sidebar').classList.toggle('mobile-open');
+
+// ── UTILS ──
+function timeAgo(date){
+  const s=Math.floor((Date.now()-date)/1000);
+  if(s<60) return 'ahora';
+  if(s<3600) return `hace ${Math.floor(s/60)}m`;
+  if(s<86400) return `hace ${Math.floor(s/3600)}h`;
+  return `hace ${Math.floor(s/86400)}d`;
+}
 </script>
 </body>
 </html>
