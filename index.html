@@ -2,1154 +2,282 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Parque Río La Silla — Red Comunitaria</title>
+  <meta property="og:title" content="Parque Río La Silla — Red Comunitaria"/>
+  <meta property="og:description" content="Mapa colaborativo de la comunidad del Parque Río La Silla, Guadalupe N.L."/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
 
 <!-- HEADER -->
 <header class="header">
-  <div class="header-left">
-    <button class="btn-icon btn-menu" id="btn-menu" onclick="toggleMobileSidebar()">☰</button>
-    <span class="logo">🌿 Río La Silla</span>
-  </div>
-  <button class="btn-publish hidden" id="btn-publish" onclick="openPublishModal()">
-    <span>📍</span> Publicar punto
-  </button>
-  <div class="header-right">
-    <div id="user-info" class="hidden" style="display:flex;align-items:center;gap:8px">
-      <button class="btn-msg" id="btn-msg" onclick="toggleMessages()">
-        ✉️<span class="msg-dot hidden" id="msg-dot"></span>
-      </button>
-      <img id="user-avatar" src="" alt="" class="avatar"/>
-      <span id="user-name" style="font-size:13px;font-weight:500"></span>
-      <span id="badge-admin" class="badge-admin hidden">Admin</span>
-      <span id="badge-mod" class="badge-mod hidden">Mod</span>
-      <button onclick="signOut()" class="btn-small">Salir</button>
+  <div class="brand">
+    <div class="brand-mark"><i data-lucide="waves"></i></div>
+    <div class="brand-text">
+      <span class="brand-name">Río La Silla</span>
+      <span class="brand-sub">Red comunitaria</span>
     </div>
-    <button id="btn-login" onclick="openAuthModal()" class="btn-primary">Entrar</button>
+  </div>
+
+  <div class="header-actions">
+    <button class="icon-btn mobile-only" onclick="toggleSearchBar()" title="Buscar"><i data-lucide="search"></i></button>
+    <button id="btn-publish" class="btn primary hidden desktop-only" onclick="openPublishFlow()">
+      <i data-lucide="map-pin"></i> Publicar punto
+    </button>
+    <div id="user-info" class="user-info hidden">
+      <span id="badge-admin" class="badge role hidden">Admin</span>
+      <span id="badge-mod" class="badge role mod hidden">Mod</span>
+      <button class="avatar-btn" onclick="openProfileModal()" title="Mi perfil">
+        <img id="user-avatar" class="avatar hidden" src="" alt=""/>
+        <span id="user-initial" class="avatar-initial hidden"></span>
+      </button>
+      <button class="icon-btn" onclick="signOut()" title="Salir"><i data-lucide="log-out"></i></button>
+    </div>
+    <button id="btn-login" class="btn primary" onclick="openAuthModal()">Entrar</button>
   </div>
 </header>
 
-<!-- LAYOUT -->
+<!-- MOBILE SEARCH -->
+<div id="search-wrap" class="search-wrap">
+  <div class="search-inner">
+    <i data-lucide="search"></i>
+    <input type="text" id="search-input" placeholder="Buscar publicaciones…" oninput="handleSearch()"/>
+  </div>
+</div>
+
+<!-- MOBILE CHIPS -->
+<div class="chips-scroll mobile-only"><div id="chips-row" class="chips-row"></div></div>
+
 <div class="layout">
-  <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar">
-    <div class="search-box">
-      <input type="text" id="search-input" placeholder="🔍 Buscar..." oninput="handleSearch()" class="input-search"/>
+  <!-- SIDEBAR desktop -->
+  <aside class="sidebar desktop-only">
+    <div class="side-search">
+      <i data-lucide="search"></i>
+      <input type="text" id="search-input-d" placeholder="Buscar…"
+        oninput="document.getElementById('search-input').value=this.value;handleSearch()"/>
     </div>
-    <div class="cat-list" id="cat-list"></div>
+    <div id="cat-list" class="cat-list"></div>
   </aside>
 
   <!-- MAP -->
   <main class="map-container">
     <div id="map"></div>
 
-    <!-- Results panel (bottom sheet mobile / side panel desktop) -->
+    <!-- Placing overlay -->
+    <div id="placing-overlay" class="placing-overlay hidden">
+      <div class="center-pin"><i data-lucide="map-pin"></i></div>
+      <div class="placing-bar">
+        <span>Mueve el mapa para ubicar el punto</span>
+        <div class="placing-btns">
+          <button class="btn ghost sm" onclick="cancelPlacing()">Cancelar</button>
+          <button class="btn primary sm" onclick="confirmPlacing()">Confirmar ubicación</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results panel -->
     <div class="results-panel" id="results-panel">
-      <div class="panel-handle" onclick="closeResults()"></div>
+      <div class="panel-grip" onclick="closeResults()"><span></span></div>
       <div class="panel-header">
-        <span class="panel-title" id="results-title">Resultados</span>
-        <button class="panel-close" onclick="closeResults()">✕</button>
+        <span id="results-title" class="panel-title">Resultados</span>
+        <button class="icon-btn" onclick="closeResults()"><i data-lucide="x"></i></button>
       </div>
       <div class="panel-list" id="results-list"></div>
     </div>
+
+    <!-- FAB mobile -->
+    <button id="fab-publish" class="fab hidden mobile-only" onclick="openPublishFlow()">
+      <i data-lucide="plus"></i>
+    </button>
   </main>
 </div>
 
 <!-- DETAIL SHEET -->
 <div class="detail-sheet" id="detail-sheet">
   <div class="detail-backdrop" onclick="closeDetail()"></div>
-  <div class="detail-body" id="detail-body">
-    <div class="detail-handle"></div>
+  <div class="detail-body">
+    <div class="detail-grip"><span></span></div>
     <div class="detail-header">
-      <div class="detail-header-info">
-        <span class="detail-cat" id="d-cat"></span>
-        <p class="detail-user" id="d-user"></p>
+      <div class="detail-head-info">
+        <span id="d-cat" class="d-cat"></span>
+        <p id="d-user" class="d-user"></p>
       </div>
-      <div class="detail-actions">
-        <button class="btn-icon" id="d-btn-msg" title="Enviar mensaje" onclick="msgToPostOwner()">✉️</button>
-        <button class="btn-icon" id="d-btn-report" title="Reportar abuso" onclick="reportPost()">🚩</button>
-        <button class="btn-close" onclick="closeDetail()">✕</button>
+      <div class="detail-head-actions">
+        <a id="d-btn-telegram" class="icon-btn hidden" target="_blank" title="Contactar por Telegram"><i data-lucide="send"></i></a>
+        <button id="d-btn-share" class="icon-btn" onclick="sharePost()" title="Compartir"><i data-lucide="share-2"></i></button>
+        <button id="d-btn-report" class="icon-btn hidden" onclick="reportPost()" title="Reportar"><i data-lucide="flag"></i></button>
+        <button class="icon-btn" onclick="closeDetail()"><i data-lucide="x"></i></button>
       </div>
     </div>
     <div class="detail-content">
       <div id="d-media"></div>
-      <p class="detail-text" id="d-text"></p>
-      <p style="font-size:11px;color:var(--muted);margin-bottom:14px" id="d-coords"></p>
+      <p id="d-text" class="d-text"></p>
+      <p id="d-coords" class="d-coords"></p>
 
-      <!-- Admin/Mod panel -->
-      <div class="admin-section hidden" id="d-admin">
-        <div class="admin-section-title" id="d-admin-title">Gestión</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn-sm hidden" id="d-btn-move" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="startMovePoint()">🔀 Desplazar</button>
-          <button class="btn-sm hidden" id="d-btn-edit" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="openEditModal()">✏️ Editar</button>
-          <button class="btn-sm hidden" id="d-btn-delete" style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;cursor:pointer;color:#991B1B" onclick="deletePost()">🗑️ Eliminar</button>
-          <button class="btn-primary btn-sm hidden" id="d-btn-approve" onclick="approvePost()">✅ Aprobar</button>
-          <button class="btn-sm hidden" id="d-btn-deactivate" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="toggleActive(false)">🔴 Desactivar</button>
-          <button class="btn-sm hidden" id="d-btn-activate" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;cursor:pointer;color:#166534" onclick="toggleActive(true)">🟢 Activar</button>
-          <button class="btn-sm hidden" id="d-btn-reports-count" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="showPostReports()">🚩 Reportes (<span id="d-report-count">0</span>)</button>
+      <div id="d-admin" class="manage-box hidden">
+        <p id="d-admin-title" class="section-t">Gestión</p>
+        <div class="manage-btns">
+          <button id="d-btn-move" class="btn ghost sm hidden" onclick="startMovePoint()"><i data-lucide="move"></i> Desplazar</button>
+          <button id="d-btn-edit" class="btn ghost sm hidden" onclick="openEditModal()"><i data-lucide="pencil"></i> Editar</button>
+          <button id="d-btn-delete" class="btn danger-ghost sm hidden" onclick="deletePost()"><i data-lucide="trash-2"></i> Eliminar</button>
+          <button id="d-btn-approve" class="btn primary sm hidden" onclick="approvePost()"><i data-lucide="check"></i> Aprobar</button>
+          <button id="d-btn-deactivate" class="btn ghost sm hidden" onclick="toggleActive(false)"><i data-lucide="eye-off"></i> Desactivar</button>
+          <button id="d-btn-activate" class="btn ghost sm hidden" onclick="toggleActive(true)"><i data-lucide="eye"></i> Activar</button>
         </div>
       </div>
 
-      <!-- Rating -->
       <div class="detail-section">
-        <div class="section-title">Calificación</div>
-        <div class="stars-row" id="d-stars-display"></div>
-        <div id="d-rate-area" class="hidden" style="margin-top:10px">
-          <p style="font-size:12px;color:var(--muted);margin-bottom:6px">Tu calificación:</p>
-          <div class="stars-row" id="d-stars-input"></div>
-          <div class="bubble-preview" id="d-rating-preview"></div>
-          <div style="display:flex;gap:8px;margin-top:8px" id="d-rating-confirm" class="hidden">
-            <button class="btn-secondary btn-sm" onclick="cancelRating()">Cancelar</button>
-            <button class="btn-primary btn-sm" onclick="confirmRating()">Confirmar</button>
+        <p class="section-t">Calificación</p>
+        <div id="d-stars-display" class="stars-display"></div>
+        <div id="d-rate-area" class="hidden">
+          <p class="muted-sm" style="margin:8px 0 4px">Tu calificación:</p>
+          <div id="d-stars-input" class="stars-input"></div>
+          <div id="d-rating-preview" class="bubble"></div>
+          <div id="d-rating-confirm" class="row-btns hidden">
+            <button class="btn ghost sm" onclick="cancelRating()">Cancelar</button>
+            <button class="btn primary sm" onclick="confirmRating()">Confirmar</button>
           </div>
         </div>
       </div>
 
-      <!-- Comments -->
       <div class="detail-section">
-        <div class="section-title">Comentarios</div>
+        <p class="section-t">Comentarios</p>
         <div id="d-comments"></div>
-        <div id="d-comment-form" class="hidden" style="margin-top:10px">
-          <textarea id="d-comment-text" class="input-full" rows="2" placeholder="Escribe un comentario..."></textarea>
-          <div style="display:flex;gap:8px;margin-top:6px">
-            <button class="btn-secondary btn-sm" onclick="cancelComment()">Cancelar</button>
-            <button class="btn-primary btn-sm" onclick="submitComment()">Publicar</button>
+        <div id="d-comment-form" class="hidden">
+          <textarea id="d-comment-text" class="input" rows="2" placeholder="Escribe un comentario…"></textarea>
+          <div class="row-btns">
+            <button class="btn ghost sm" onclick="cancelComment()">Cancelar</button>
+            <button class="btn primary sm" onclick="submitComment()">Publicar</button>
           </div>
         </div>
-        <button class="btn-secondary btn-sm" id="d-btn-comment" style="margin-top:8px" onclick="openCommentForm()">+ Comentar</button>
+        <button id="d-btn-comment" class="btn ghost sm hidden" onclick="openCommentForm()"><i data-lucide="message-circle"></i> Comentar</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MESSAGES WINDOW -->
-<div class="msg-window" id="msg-window">
-  <div class="msg-win-header">
-    <div style="display:flex;align-items:center">
-      <button class="msg-back hidden" id="msg-back" onclick="showInbox()">←</button>
-      <h3 id="msg-win-title">Mensajes</h3>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <button class="btn-icon hidden" id="btn-new-msg" title="Nuevo mensaje" onclick="openUserPicker()">➕</button>
-      <button class="btn-close" onclick="toggleMessages()">✕</button>
-    </div>
-  </div>
-  <div id="msg-inbox" class="msg-list"></div>
-  <div id="msg-thread-view" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-    <div class="msg-thread" id="msg-thread"></div>
-    <div class="msg-compose">
-      <textarea id="msg-reply-text" rows="2" placeholder="Escribe un mensaje..."></textarea>
-      <button class="btn-primary btn-sm" onclick="sendReply()">Enviar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: Auth -->
+<!-- AUTH MODAL -->
 <div id="auth-modal" class="modal-overlay hidden" onclick="closeAuthOnBackdrop(event)">
   <div class="modal">
     <div class="modal-header">
       <h2>Acceder</h2>
-      <button class="btn-close" onclick="closeAuthModal()">✕</button>
+      <button class="icon-btn" onclick="closeAuthModal()"><i data-lucide="x"></i></button>
     </div>
-    <button onclick="signInGoogle()" class="btn-secondary" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    <button onclick="signInGoogle()" class="btn google">
+      <svg width="17" height="17" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Continuar con Google
     </button>
-    <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px">— o con correo —</div>
+    <div class="divider-text">o con correo</div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Iniciar sesión</button>
       <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Registrarse</button>
     </div>
     <div id="auth-login-form">
-      <input type="email" id="login-email" class="input-full" placeholder="Correo electrónico"/>
-      <input type="password" id="login-password" class="input-full" placeholder="Contraseña"/>
-      <button onclick="signInEmail()" class="btn-primary" style="width:100%">Entrar</button>
-      <p id="login-error" style="font-size:12px;color:var(--red);margin-top:6px"></p>
+      <input type="email" id="login-email" class="input" placeholder="Correo electrónico"/>
+      <input type="password" id="login-password" class="input" placeholder="Contraseña"/>
+      <button onclick="signInEmail()" class="btn primary full">Entrar</button>
+      <p id="login-error" class="form-error"></p>
     </div>
     <div id="auth-register-form" class="hidden">
-      <input type="text" id="reg-name" class="input-full" placeholder="Nombre completo"/>
-      <input type="email" id="reg-email" class="input-full" placeholder="Correo electrónico"/>
-      <input type="password" id="reg-password" class="input-full" placeholder="Contraseña (mín. 6 caracteres)"/>
-      <div class="terms-check">
+      <input type="text" id="reg-name" class="input" placeholder="Nombre completo"/>
+      <input type="email" id="reg-email" class="input" placeholder="Correo electrónico"/>
+      <input type="password" id="reg-password" class="input" placeholder="Contraseña (mín. 6 caracteres)"/>
+      <label class="terms-check">
         <input type="checkbox" id="terms-check"/>
-        <label for="terms-check">Tengo 18 años o más y acepto los <a href="terminos.html" target="_blank">Términos de Uso</a></label>
-      </div>
-      <button onclick="registerEmail()" class="btn-primary" style="width:100%">Crear cuenta</button>
-      <p id="reg-error" style="font-size:12px;color:var(--red);margin-top:6px"></p>
+        <span>Tengo 18 años o más y acepto los <a href="terminos.html" target="_blank">Términos de Uso</a></span>
+      </label>
+      <button onclick="registerEmail()" class="btn primary full">Crear cuenta</button>
+      <p id="reg-error" class="form-error"></p>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Publish / Edit -->
+<!-- PUBLISH MODAL -->
 <div id="publish-modal" class="modal-overlay hidden" onclick="closePublishOnBackdrop(event)">
   <div class="modal">
     <div class="modal-header">
       <h2 id="publish-modal-title">Nueva publicación</h2>
-      <button class="btn-close" onclick="closePublishModal()">✕</button>
+      <button class="icon-btn" onclick="closePublishModal()"><i data-lucide="x"></i></button>
     </div>
-    <div class="coords-row">
-      <span id="pub-coords">📍 Haz clic en el mapa para ubicar</span>
-      <button class="btn-small" onclick="toggleManualCoords()">Escribir coords</button>
-    </div>
-    <div id="manual-coords-row" class="hidden" style="margin-bottom:8px">
-      <input type="text" id="manual-coords-input" class="input-full" placeholder="25.65600, -100.22600"/>
-      <button class="btn-secondary btn-sm" onclick="applyManualCoords()">Ir a esa ubicación</button>
-    </div>
-    <select id="pub-cat" class="input-full">
-      <option value="arte">🎨 Arte y belleza</option>
-      <option value="comunidad">🤝 Comunidad y convivencia</option>
-      <option value="denuncia">🚨 Denuncia y reportes</option>
-      <option value="deporte">⚽ Deporte y esparcimiento</option>
-      <option value="educacion">📚 Educación</option>
-      <option value="flora">🦋 Flora, Fauna y Agua</option>
-      <option value="historia">📖 Historia(s) y relatos</option>
-      <option value="infraestructura">🏗️ Infraestructura</option>
-      <option value="mascotas">🐾 Mascotas</option>
-      <option value="mobiliario">🪑 Mobiliario Urbano</option>
-    </select>
-    <textarea id="pub-text" class="input-full" rows="3" placeholder="Describe lo que observas..."></textarea>
-    <div style="margin-bottom:8px">
-      <p style="font-size:11px;color:var(--muted);margin-bottom:6px">ADJUNTOS (opcional)</p>
-      <div class="attach-row">
-        <label class="attach-btn">📷 Foto <small>(máx 5MB)</small><input type="file" id="file-photo" accept="image/*" onchange="handleFile('photo')" hidden/></label>
-        <label class="attach-btn">🎵 Audio <small>(máx 10MB)</small><input type="file" id="file-audio" accept="audio/mpeg,audio/mp3" onchange="handleFile('audio')" hidden/></label>
-        <label class="attach-btn">📄 Doc <small>(máx 5MB)</small><input type="file" id="file-doc" accept="application/pdf" onchange="handleFile('doc')" hidden/></label>
+    <div class="coords-box">
+      <span><i data-lucide="map-pin" style="width:14px;height:14px"></i> <b id="pub-coords">—</b></span>
+      <div>
+        <button class="btn-link" onclick="relocateFromForm()">Reubicar en mapa</button> ·
+        <button class="btn-link" onclick="toggleManualCoords()">Escribir coords</button>
       </div>
-      <div id="file-previews"></div>
     </div>
-    <div class="modal-footer">
-      <button onclick="closePublishModal()" class="btn-secondary">Cancelar</button>
-      <button onclick="submitPost()" class="btn-primary" id="btn-submit-post">Publicar</button>
+    <div id="manual-coords-row" class="hidden">
+      <input type="text" id="manual-coords-input" class="input" placeholder="25.65600, -100.22600"/>
+      <button class="btn ghost sm" onclick="applyManualCoords()">Aplicar</button>
+    </div>
+    <select id="pub-cat" class="input">
+      <option value="arte">Arte y belleza</option>
+      <option value="comunidad">Comunidad y convivencia</option>
+      <option value="denuncia">Denuncia y reportes</option>
+      <option value="deporte">Deporte y esparcimiento</option>
+      <option value="educacion">Educación</option>
+      <option value="flora">Flora, Fauna y Agua</option>
+      <option value="historia">Historia(s) y relatos</option>
+      <option value="infraestructura">Infraestructura</option>
+      <option value="mascotas">Mascotas</option>
+      <option value="mobiliario">Mobiliario Urbano</option>
+    </select>
+    <textarea id="pub-text" class="input" rows="3" placeholder="Describe lo que observas…"></textarea>
+    <p class="section-t" style="margin-bottom:6px">Adjuntos (opcional)</p>
+    <div class="attach-row">
+      <label class="attach"><i data-lucide="image"></i> Foto<input type="file" id="file-photo" accept="image/*" onchange="handleFile('photo')" hidden/></label>
+      <label class="attach"><i data-lucide="music"></i> Audio MP3<input type="file" id="file-audio" accept="audio/mpeg,audio/mp3" onchange="handleFile('audio')" hidden/></label>
+      <label class="attach"><i data-lucide="file-text"></i> PDF<input type="file" id="file-doc" accept="application/pdf" onchange="handleFile('doc')" hidden/></label>
+    </div>
+    <div id="file-previews" class="file-previews"></div>
+    <div class="row-btns" style="margin-top:14px">
+      <button onclick="closePublishModal()" class="btn ghost">Cancelar</button>
+      <button onclick="submitPost()" class="btn primary" id="btn-submit-post">Publicar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: New Message -->
-<div id="new-msg-modal" class="modal-overlay hidden" onclick="closeNewMsgOnBackdrop(event)">
+<!-- PROFILE MODAL -->
+<div id="profile-modal" class="modal-overlay hidden" onclick="closeProfileOnBackdrop(event)">
   <div class="modal">
     <div class="modal-header">
-      <h2>Nuevo mensaje</h2>
-      <button class="btn-close" onclick="closeNewMsgModal()">✕</button>
+      <h2>Mi perfil</h2>
+      <button class="icon-btn" onclick="closeProfileModal()"><i data-lucide="x"></i></button>
     </div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Para: <strong id="new-msg-to-name"></strong></p>
-    <select id="new-msg-user-select" class="input-full hidden"></select>
-    <textarea id="new-msg-text" class="input-full" rows="4" placeholder="Escribe tu mensaje..."></textarea>
-    <div class="modal-footer">
-      <button onclick="closeNewMsgModal()" class="btn-secondary">Cancelar</button>
-      <button onclick="sendNewMessage()" class="btn-primary">Enviar</button>
+    <p class="muted-sm" style="margin-bottom:8px">Usuario de Telegram (opcional). Si lo agregas, otros usuarios podrán contactarte con un botón en tus publicaciones.</p>
+    <input type="text" id="profile-telegram" class="input" placeholder="@tuusuario"/>
+    <div class="row-btns">
+      <button class="btn ghost" onclick="closeProfileModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveProfile()">Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Admin Panel -->
+<!-- ADMIN MODAL -->
 <div id="admin-modal" class="modal-overlay hidden" onclick="closeAdminOnBackdrop(event)">
   <div class="modal">
     <div class="modal-header">
-      <h2>Panel de administración</h2>
-      <button class="btn-close" onclick="closeAdminModal()">✕</button>
+      <h2>Administración</h2>
+      <button class="icon-btn" onclick="closeAdminModal()"><i data-lucide="x"></i></button>
     </div>
-    <div class="admin-section">
-      <div class="admin-section-title">Agregar moderador</div>
-      <input type="email" id="mod-email-input" class="input-full" placeholder="correo@ejemplo.com"/>
-      <button onclick="addModerator()" class="btn-primary btn-sm">Agregar moderador</button>
-      <div id="mod-list" style="margin-top:10px"></div>
+    <p class="section-t">Moderadores</p>
+    <p class="muted-sm" style="margin-bottom:8px">Se activan automáticamente al iniciar sesión con su correo.</p>
+    <div class="row-btns" style="justify-content:flex-start">
+      <input type="email" id="mod-email-input" class="input" style="margin:0;flex:1" placeholder="correo@ejemplo.com"/>
+      <button onclick="addModerator()" class="btn primary sm">Agregar</button>
     </div>
-    <div class="admin-section" style="margin-top:12px">
-      <div class="admin-section-title">Exportar datos</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Descarga todos los puntos en formato JSON.</p>
-      <button onclick="exportData()" class="btn-secondary btn-sm">📥 Exportar JSON</button>
-    </div>
+    <div id="mod-list" class="mod-list"></div>
+    <p class="section-t" style="margin-top:18px">Respaldo</p>
+    <button onclick="exportData()" class="btn ghost sm"><i data-lucide="download"></i> Exportar puntos (JSON)</button>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut,
-         onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         updateProfile, sendEmailVerification }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy,
-         serverTimestamp, doc, updateDoc, deleteDoc, getDoc, setDoc, getDocs,
-         where, arrayUnion }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDZCv1BsUFiy6JxUFpCmd8fV3biRKmp1XI",
-  authDomain: "rio-la-silla-comunidad.firebaseapp.com",
-  projectId: "rio-la-silla-comunidad",
-  storageBucket: "rio-la-silla-comunidad.firebasestorage.app",
-  messagingSenderId: "911759383073",
-  appId: "1:911759383073:web:a8ac1748ac62abc115a160"
-};
-
-const CLOUDINARY_CLOUD = 'dfkfaae4l';
-const CLOUDINARY_PRESET = 'riolasilla_uploads';
-const ADMIN_UIDS = ['B25MIYOUPEZ1wEwXUCddDxAOzxh1'];
-
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
-const CATS = {
-  arte:            { label:'🎨 Arte y belleza',      color:'#E91E8C' },
-  comunidad:       { label:'🤝 Comunidad',           color:'#9C27B0' },
-  denuncia:        { label:'🚨 Denuncia',            color:'#F44336' },
-  deporte:         { label:'⚽ Deporte',             color:'#FF9800' },
-  educacion:       { label:'📚 Educación',           color:'#2196F3' },
-  flora:           { label:'🦋 Flora/Fauna/Agua',    color:'#4CAF50' },
-  historia:        { label:'📖 Historia',            color:'#795548' },
-  infraestructura: { label:'🏗️ Infraestructura',    color:'#607D8B' },
-  mascotas:        { label:'🐾 Mascotas',            color:'#FF5722' },
-  mobiliario:      { label:'🪑 Mobiliario Urbano',   color:'#00BCD4' },
-};
-
-// ── STATE ──
-let currentUser = null, isAdmin = false, isMod = false;
-let allPosts = [], currentCat = null, searchMode = false;
-let currentPostId = null, editingPostId = null;
-let pendingLatLng = null, movingPostId = null;
-let pendingRating = 0, tempRating = 0;
-let msgToUid = null, msgToName = null, activeThreadId = null;
-let fileData = { photo: null, audio: null, doc: null };
-let existingUrls = { photoURL: null, audioURL: null, docURL: null };
-let clusterGroup, map, tempMarker;
-let moderators = [];
-
-// ── MAP SETUP ──
-map = L.map('map', { zoomControl: true }).setView([25.6560, -100.2260], 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom:19
-}).addTo(map);
-
-clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50, showCoverageOnHover: false });
-map.addLayer(clusterGroup);
-
-fetch('rio_overlay.geojson').then(r=>r.json()).then(data=>{
-  L.geoJSON(data,{
-    style: f=>{
-      const p=f.properties;
-      if(p.waterway==='river') return{color:'#1D9E75',weight:3,opacity:0.8};
-      if(p.waterway==='stream') return{color:'#5DCAA5',weight:1.5,opacity:0.6};
-      if(p.leisure==='park') return{color:'#639922',weight:1,fillColor:'#639922',fillOpacity:0.07};
-      return{color:'#aaa',weight:1,opacity:0.2};
-    },
-    onEachFeature:(f,l)=>{ if(f.properties.name) l.bindPopup(f.properties.name); }
-  }).addTo(map);
-});
-
-// Map click for publishing / moving
-map.on('click', e=>{
-  if(movingPostId) { finishMove(e.latlng); return; }
-  if(document.getElementById('publish-modal').classList.contains('hidden')) return;
-  setPendingLocation(e.latlng.lat, e.latlng.lng);
-});
-
-function setPendingLocation(lat, lng) {
-  pendingLatLng = {lat, lng};
-  document.getElementById('pub-coords').textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  if(tempMarker) map.removeLayer(tempMarker);
-  tempMarker = L.marker([lat,lng]).addTo(map);
-}
-
-// ── PIN ICONS ──
-function makeIcon(cat, photoURL) {
-  const color = CATS[cat]?.color || '#888';
-  if(photoURL) {
-    return L.divIcon({
-      className:'',
-      html:`<div style="width:36px;height:36px;border-radius:50%;border:3px solid ${color};overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.3);background:#fff"><img src="${photoURL}" style="width:100%;height:100%;object-fit:cover"/></div>`,
-      iconSize:[36,36], iconAnchor:[18,18]
-    });
-  }
-  return L.divIcon({
-    className:'',
-    html:`<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 0C6.27 0 0 6.27 0 14c0 9.625 14 22 14 22s14-12.375 14-22C28 6.27 21.73 0 14 0z" fill="${color}"/>
-      <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
-    </svg>`,
-    iconSize:[28,36], iconAnchor:[14,36]
-  });
-}
-
-// ── AUTH ──
-window.signInGoogle = async()=>{
-  try{ await signInWithPopup(auth,provider); closeAuthModal(); }
-  catch(e){ console.error(e); }
-};
-window.signOut = ()=>fbSignOut(auth);
-
-window.signInEmail = async()=>{
-  const email=document.getElementById('login-email').value.trim();
-  const pw=document.getElementById('login-password').value;
-  const err=document.getElementById('login-error');
-  try{
-    await signInWithEmailAndPassword(auth,email,pw);
-    if(!auth.currentUser.emailVerified){
-      err.textContent='Verifica tu correo antes de entrar.';
-      fbSignOut(auth); return;
-    }
-    closeAuthModal();
-  }catch(e){ err.textContent=e.message; }
-};
-
-window.registerEmail = async()=>{
-  const name=document.getElementById('reg-name').value.trim();
-  const email=document.getElementById('reg-email').value.trim();
-  const pw=document.getElementById('reg-password').value;
-  const terms=document.getElementById('terms-check').checked;
-  const err=document.getElementById('reg-error');
-  if(!terms){ err.textContent='Debes aceptar los términos de uso.'; return; }
-  if(!name){ err.textContent='Escribe tu nombre.'; return; }
-  try{
-    const cred=await createUserWithEmailAndPassword(auth,email,pw);
-    await updateProfile(cred.user,{displayName:name});
-    await sendEmailVerification(cred.user);
-    await fbSignOut(auth);
-    err.style.color='var(--green)';
-    err.textContent='¡Cuenta creada! Revisa tu correo para verificar.';
-  }catch(e){ err.textContent=e.message; }
-};
-
-window.switchTab = tab=>{
-  document.getElementById('auth-login-form').classList.toggle('hidden', tab==='register');
-  document.getElementById('auth-register-form').classList.toggle('hidden', tab==='login');
-  document.getElementById('tab-login').classList.toggle('active', tab==='login');
-  document.getElementById('tab-register').classList.toggle('active', tab==='register');
-};
-
-onAuthStateChanged(auth, async user=>{
-  currentUser = user;
-  isAdmin = user && ADMIN_UIDS.includes(user.uid);
-  isMod = false;
-
-  if(user){
-    // Check moderator status
-    const modDoc = await getDoc(doc(db,'moderators',user.email||''));
-    isMod = modDoc.exists() && !isAdmin;
-
-    document.getElementById('btn-login').classList.add('hidden');
-    document.getElementById('user-info').classList.remove('hidden');
-    document.getElementById('btn-publish').classList.remove('hidden');
-    document.getElementById('user-avatar').src = user.photoURL||'';
-    document.getElementById('user-name').textContent = user.displayName?.split(' ')[0]||'';
-    document.getElementById('badge-admin').classList.toggle('hidden',!isAdmin);
-    document.getElementById('badge-mod').classList.toggle('hidden',!isMod);
-    setDoc(doc(db,'users',user.uid),{name:user.displayName||'',photo:user.photoURL||''},{merge:true});
-    document.getElementById('btn-new-msg').classList.toggle('hidden',!(isAdmin||isMod));
-    subscribeMessages();
-    if(isAdmin) loadModerators();
-  } else {
-    document.getElementById('btn-login').classList.remove('hidden');
-    document.getElementById('user-info').classList.add('hidden');
-    document.getElementById('btn-publish').classList.add('hidden');
-  }
-  renderSidebar();
-  renderMarkers();
-});
-
-// ── FIRESTORE ──
-const postsQ = query(collection(db,'posts'), orderBy('createdAt','desc'));
-onSnapshot(postsQ, snap=>{
-  allPosts=[];
-  snap.forEach(d=>allPosts.push({id:d.id,...d.data()}));
-  renderSidebar();
-  renderMarkers();
-  if(currentPostId){ const p=allPosts.find(x=>x.id===currentPostId); if(p) renderDetail(p); }
-});
-
-// ── SIDEBAR ──
-function renderSidebar(){
-  const approved = allPosts.filter(p=>p.approved && p.active!==false);
-  const pending  = allPosts.filter(p=>!p.approved);
-  const inactive = allPosts.filter(p=>p.approved && p.active===false);
-  const counts   = {};
-  Object.keys(CATS).forEach(k=>{ counts[k]=approved.filter(p=>p.cat===k).length; });
-
-  let html=`
-    <div class="cat-item ${!currentCat&&!searchMode?'active':''}" onclick="selectCat(null)">
-      <span class="cat-label">Todas</span>
-      <span class="cat-count">${approved.length}</span>
-    </div>`;
-
-  Object.entries(CATS).forEach(([k,v])=>{
-    html+=`<div class="cat-item ${currentCat===k?'active':''}" onclick="selectCat('${k}')">
-      <span class="cat-dot-sm" style="background:${v.color}"></span>
-      <span class="cat-label">${v.label}</span>
-      <span class="cat-count">${counts[k]}</span>
-    </div>`;
-  });
-
-  if(isAdmin||isMod){
-    html+=`<div class="sidebar-divider"></div>
-      <div class="cat-item cat-pending ${currentCat==='__pending'?'active':''}" onclick="selectCat('__pending')">
-        <span class="cat-label">⏳ Pendientes</span>
-        <span class="cat-count">${pending.length}</span>
-      </div>
-      <div class="cat-item" style="color:#6B7280" onclick="selectCat('__inactive')" class="${currentCat==='__inactive'?'active':''}">
-        <span class="cat-label">🔴 Inactivos</span>
-        <span class="cat-count">${inactive.length}</span>
-      </div>
-      <div class="cat-item cat-reports ${currentCat==='__reports'?'active':''}" onclick="selectCat('__reports')">
-        <span class="cat-label">🚩 Reportes</span>
-        <span class="cat-count" id="reports-count">…</span>
-      </div>`;
-    if(isAdmin){
-      html+=`<div class="sidebar-divider"></div>
-        <div class="cat-item" onclick="openAdminModal()">
-          <span class="cat-label">⚙️ Administración</span>
-        </div>`;
-    }
-  }
-  document.getElementById('cat-list').innerHTML=html;
-  loadReportCount();
-}
-
-async function loadReportCount(){
-  if(!isAdmin&&!isMod) return;
-  const snap=await getDocs(collection(db,'reports'));
-  const open=snap.docs.filter(d=>!d.data().resolved).length;
-  const el=document.getElementById('reports-count');
-  if(el) el.textContent=open;
-}
-
-window.selectCat = cat=>{
-  currentCat=cat; searchMode=false;
-  document.getElementById('search-input').value='';
-  if(cat==='__reports'){ showReportsList(); return; }
-  const list = cat===null ? allPosts.filter(p=>p.approved&&p.active!==false)
-    : cat==='__pending' ? allPosts.filter(p=>!p.approved)
-    : cat==='__inactive' ? allPosts.filter(p=>p.approved&&p.active===false)
-    : allPosts.filter(p=>p.approved&&p.active!==false&&p.cat===cat);
-  showResultsPanel(cat?( CATS[cat]?.label||cat ):'Todas las publicaciones', list);
-  renderMarkers();
-  renderSidebar();
-};
-
-window.handleSearch = ()=>{
-  const q=document.getElementById('search-input').value.toLowerCase().trim();
-  if(!q){ searchMode=false; closeResults(); renderSidebar(); return; }
-  searchMode=true; currentCat=null;
-  const list=allPosts.filter(p=>p.approved&&p.active!==false&&p.text?.toLowerCase().includes(q));
-  showResultsPanel(`Resultados: "${q}"`, list);
-  renderSidebar();
-};
-
-// ── RESULTS PANEL ──
-function showResultsPanel(title, posts){
-  document.getElementById('results-title').textContent=title;
-  const list=document.getElementById('results-list');
-  if(!posts.length){ list.innerHTML='<p style="padding:16px;font-size:13px;color:var(--muted)">Sin resultados.</p>'; }
-  else{
-    list.innerHTML=posts.map(p=>{
-      const ts=p.createdAt?.toDate?timeAgo(p.createdAt.toDate()):'';
-      const c=CATS[p.cat]||{label:p.cat,color:'#888'};
-      const stars=p.ratingAvg?'★'.repeat(Math.round(p.ratingAvg)):'';
-      const pend=!p.approved?'<span class="badge-pending-sm">Pendiente</span>'
-        :p.active===false?'<span class="badge-pending-sm" style="background:#FEE2E2;color:#991B1B">Inactivo</span>':'';
-      return`<div class="post-card" onclick="openDetail('${p.id}')">
-        <div class="post-card-top">
-          <span class="cat-dot-sm" style="background:${c.color}"></span>
-          <span class="post-cat-label" style="color:${c.color}">${c.label}</span>
-          ${pend}
-        </div>
-        <p class="post-text">${p.text?.substring(0,90)}${p.text?.length>90?'…':''}</p>
-        <div class="post-meta"><span>${p.userName}·${ts}</span><span class="post-stars">${stars}</span></div>
-      </div>`;
-    }).join('');
-  }
-  document.getElementById('results-panel').classList.add('open');
-}
-
-window.closeResults = ()=>{
-  document.getElementById('results-panel').classList.remove('open');
-};
-
-// ── MARKERS ──
-function renderMarkers(){
-  clusterGroup.clearLayers();
-  const visible = allPosts.filter(p=>{
-    if(!p.approved && !(isAdmin||isMod)) return false;
-    if(p.active===false && !(isAdmin||isMod)) return false;
-    if(!p.lat) return false;
-    return true;
-  });
-  visible.forEach(post=>{
-    const m=L.marker([post.lat,post.lng],{icon:makeIcon(post.cat,post.photoURL)});
-    m.on('click',()=>openDetail(post.id));
-    clusterGroup.addLayer(m);
-  });
-}
-
-// ── DETAIL ──
-window.openDetail = id=>{
-  currentPostId=id;
-  const p=allPosts.find(x=>x.id===id);
-  if(!p) return;
-  renderDetail(p);
-  document.getElementById('detail-sheet').classList.add('open');
-  if(p.lat) map.setView([p.lat,p.lng],16);
-};
-
-function renderDetail(p){
-  const c=CATS[p.cat]||{label:p.cat,color:'#888'};
-  const ts=p.createdAt?.toDate?p.createdAt.toDate().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'}):'';
-  document.getElementById('d-cat').textContent=c.label;
-  document.getElementById('d-cat').style.cssText=`background:${c.color}22;color:${c.color};font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:4px`;
-  document.getElementById('d-user').textContent=`${p.userName} · ${ts}`;
-  document.getElementById('d-text').textContent=p.text||'';
-  document.getElementById('d-coords').textContent=p.lat?`📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`:'';
-
-  let media='';
-  if(p.photoURL) media+=`<img src="${p.photoURL}" class="detail-img"/>`;
-  if(p.audioURL) media+=`<audio controls src="${p.audioURL}" class="detail-audio"></audio>`;
-  if(p.docURL)   media+=`<a href="${p.docURL}" target="_blank" class="btn-secondary btn-sm" style="margin-bottom:12px;display:inline-block">📄 Ver documento</a>`;
-  document.getElementById('d-media').innerHTML=media;
-
-  // Buttons visibility
-  const isOwner = currentUser && p.uid===currentUser.uid;
-  const canEdit = isOwner||isAdmin||isMod;
-  document.getElementById('d-btn-msg').classList.toggle('hidden',!currentUser||isOwner);
-  document.getElementById('d-btn-report').classList.toggle('hidden',!currentUser||isOwner);
-
-  // Gestión / Moderación panel — visible to owner, admin and mods
-  const adminPanel=document.getElementById('d-admin');
-  adminPanel.classList.toggle('hidden',!canEdit);
-  document.getElementById('d-admin-title').textContent=(isAdmin||isMod)?'Moderación':'Gestión de tu publicación';
-  // owner + mod buttons
-  document.getElementById('d-btn-move').classList.toggle('hidden',!canEdit);
-  document.getElementById('d-btn-edit').classList.toggle('hidden',!canEdit);
-  document.getElementById('d-btn-delete').classList.toggle('hidden',!canEdit);
-  // mod-only buttons
-  document.getElementById('d-btn-approve').classList.toggle('hidden',!(isAdmin||isMod)||p.approved);
-  document.getElementById('d-btn-deactivate').classList.toggle('hidden',!(isAdmin||isMod)||!p.approved||(p.active===false));
-  document.getElementById('d-btn-activate').classList.toggle('hidden',!(isAdmin||isMod)||!p.approved||(p.active!==false));
-  document.getElementById('d-btn-reports-count').classList.toggle('hidden',!(isAdmin||isMod));
-  const reports=p.reports||[];
-  document.getElementById('d-report-count').textContent=reports.length;
-
-  // Rating
-  const avg=p.ratingAvg||0, count=p.ratingCount||0;
-  const starsDisplay=document.getElementById('d-stars-display');
-  starsDisplay.innerHTML=`${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}<span class="rating-avg">${avg.toFixed(1)} (${count} votos)</span>`;
-  starsDisplay.style.color='var(--amber)';
-
-  const myRating=currentUser&&p.ratings?p.ratings[currentUser.uid]:null;
-  const rateArea=document.getElementById('d-rate-area');
-  rateArea.classList.toggle('hidden',!currentUser||!!myRating);
-  if(currentUser&&!myRating){
-    pendingRating=0;
-    const si=document.getElementById('d-stars-input');
-    si.innerHTML=[1,2,3,4,5].map(n=>`<span class="star" data-n="${n}" onclick="selectRating(${n})">★</span>`).join('');
-  }
-
-  // Comments
-  renderComments(p);
-  document.getElementById('d-btn-comment').classList.toggle('hidden',!currentUser);
-  document.getElementById('d-comment-form').classList.add('hidden');
-}
-
-function renderComments(p){
-  const comments=p.comments||[];
-  const div=document.getElementById('d-comments');
-  if(!comments.length){ div.innerHTML='<p style="font-size:12px;color:var(--muted)">Sin comentarios aún.</p>'; return; }
-  div.innerHTML=comments.map((c,i)=>{
-    const canDel=currentUser&&(c.uid===currentUser.uid||isAdmin||isMod);
-    return`<div class="comment">
-      <div class="comment-header">
-        <span class="comment-user">${c.userName}</span>
-        <span class="comment-time">${timeAgo(new Date(c.createdAt))}</span>
-      </div>
-      <p class="comment-text">${c.text}</p>
-      <div class="comment-actions">
-        ${currentUser&&c.uid!==currentUser?.uid?`<button class="btn-link" onclick="msgToComment('${c.uid}','${c.userName}')">✉️ Mensaje</button>`:''}
-        ${canDel?`<button class="btn-link" onclick="deleteComment(${i})">🗑️</button>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-window.closeDetail = ()=>{
-  document.getElementById('detail-sheet').classList.remove('open');
-  currentPostId=null;
-};
-
-// ── APPROVE / DELETE ──
-window.approvePost = async()=>{
-  if(!currentPostId) return;
-  await updateDoc(doc(db,'posts',currentPostId),{approved:true,active:true});
-};
-
-window.toggleActive = async(active)=>{
-  if(!currentPostId) return;
-  await updateDoc(doc(db,'posts',currentPostId),{active});
-};
-
-window.deletePost = async()=>{
-  if(!currentPostId||!confirm('¿Eliminar esta publicación?')) return;
-  await deleteDoc(doc(db,'posts',currentPostId));
-  closeDetail();
-};
-
-window.deleteComment = async(idx)=>{
-  const p=allPosts.find(x=>x.id===currentPostId); if(!p) return;
-  const comments=[...(p.comments||[])];
-  comments.splice(idx,1);
-  await updateDoc(doc(db,'posts',currentPostId),{comments});
-};
-
-// ── MOVE POINT ──
-window.startMovePoint = ()=>{
-  movingPostId=currentPostId;
-  closeDetail();
-  map.getContainer().style.cursor='crosshair';
-  const hint=document.createElement('div');
-  hint.id='move-hint';
-  hint.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;z-index:999';
-  hint.textContent='Haz clic en el nuevo punto del mapa';
-  document.body.appendChild(hint);
-};
-
-async function finishMove(latlng){
-  if(!movingPostId) return;
-  await updateDoc(doc(db,'posts',movingPostId),{lat:latlng.lat,lng:latlng.lng});
-  movingPostId=null;
-  map.getContainer().style.cursor='';
-  const h=document.getElementById('move-hint'); if(h) h.remove();
-}
-
-// ── PUBLISH MODAL ──
-window.openPublishModal = ()=>{
-  if(!currentUser){ openAuthModal(); return; }
-  editingPostId=null;
-  pendingLatLng=null;
-  fileData={photo:null,audio:null,doc:null};
-  existingUrls={photoURL:null,audioURL:null,docURL:null};
-  document.getElementById('publish-modal-title').textContent='Nueva publicación';
-  document.getElementById('pub-coords').textContent='📍 Haz clic en el mapa para ubicar';
-  document.getElementById('pub-text').value='';
-  document.getElementById('file-previews').innerHTML='';
-  document.getElementById('publish-modal').classList.remove('hidden');
-};
-
-window.openEditModal = ()=>{
-  const p=allPosts.find(x=>x.id===currentPostId); if(!p) return;
-  editingPostId=currentPostId;
-  pendingLatLng={lat:p.lat,lng:p.lng};
-  existingUrls={photoURL:p.photoURL||null,audioURL:p.audioURL||null,docURL:p.docURL||null};
-  fileData={photo:null,audio:null,doc:null};
-  document.getElementById('publish-modal-title').textContent='Editar publicación';
-  document.getElementById('pub-coords').textContent=`📍 ${p.lat?.toFixed(5)}, ${p.lng?.toFixed(5)}`;
-  document.getElementById('pub-text').value=p.text||'';
-  document.getElementById('pub-cat').value=p.cat||'arte';
-  renderFilePreviews();
-  document.getElementById('publish-modal').classList.remove('hidden');
-  closeDetail();
-};
-
-window.closePublishModal = ()=>{
-  document.getElementById('publish-modal').classList.add('hidden');
-  if(tempMarker){ map.removeLayer(tempMarker); tempMarker=null; }
-  pendingLatLng=null; editingPostId=null;
-};
-window.closePublishOnBackdrop = e=>{ if(e.target.id==='publish-modal') closePublishModal(); };
-
-window.toggleManualCoords = ()=>document.getElementById('manual-coords-row').classList.toggle('hidden');
-window.applyManualCoords = ()=>{
-  const val=document.getElementById('manual-coords-input').value.trim();
-  const parts=val.split(',').map(s=>parseFloat(s.trim()));
-  if(parts.length===2&&!isNaN(parts[0])&&!isNaN(parts[1])){
-    setPendingLocation(parts[0],parts[1]);
-    map.setView([parts[0],parts[1]],16);
-    document.getElementById('manual-coords-row').classList.add('hidden');
-  } else alert('Formato incorrecto. Usa: 25.65600, -100.22600');
-};
-
-// ── FILES ──
-window.handleFile = type=>{
-  const input=document.getElementById(`file-${type}`);
-  const file=input.files[0]; if(!file) return;
-  const maxMB={photo:5,audio:10,doc:5}[type];
-  if(file.size>maxMB*1024*1024){ alert(`Máximo ${maxMB}MB.`); input.value=''; return; }
-  fileData[type]=file;
-  renderFilePreviews();
-};
-
-function renderFilePreviews(){
-  const div=document.getElementById('file-previews');
-  let html='';
-  if(fileData.photo) html+=`<div class="preview-item">📷 ${fileData.photo.name}<button onclick="clearFile('photo')">✕</button></div>`;
-  else if(existingUrls.photoURL) html+=`<div class="preview-item">📷 Foto actual <button onclick="clearExisting('photoURL')">✕ Quitar</button></div>`;
-  if(fileData.audio) html+=`<div class="preview-item">🎵 ${fileData.audio.name}<button onclick="clearFile('audio')">✕</button></div>`;
-  else if(existingUrls.audioURL) html+=`<div class="preview-item">🎵 Audio actual <button onclick="clearExisting('audioURL')">✕ Quitar</button></div>`;
-  if(fileData.doc) html+=`<div class="preview-item">📄 ${fileData.doc.name}<button onclick="clearFile('doc')">✕</button></div>`;
-  else if(existingUrls.docURL) html+=`<div class="preview-item">📄 Doc actual <button onclick="clearExisting('docURL')">✕ Quitar</button></div>`;
-  div.innerHTML=html;
-}
-
-window.clearFile = type=>{ fileData[type]=null; document.getElementById(`file-${type}`).value=''; renderFilePreviews(); };
-window.clearExisting = key=>{ existingUrls[key]=null; renderFilePreviews(); };
-
-async function uploadToCloudinary(file,type){
-  const fd=new FormData();
-  fd.append('file',file); fd.append('upload_preset',CLOUDINARY_PRESET); fd.append('folder','riolasilla');
-  const rtype=type==='audio'?'video':type==='doc'?'raw':'image';
-  const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${rtype}/upload`,{method:'POST',body:fd});
-  const data=await res.json();
-  if(data.error) throw new Error(data.error.message);
-  return data.secure_url;
-}
-
-window.submitPost = async()=>{
-  const text=document.getElementById('pub-text').value.trim();
-  const cat=document.getElementById('pub-cat').value;
-  if(!text){ alert('Escribe un mensaje.'); return; }
-  if(!pendingLatLng){ alert('Selecciona una ubicación en el mapa.'); return; }
-  const btn=document.getElementById('btn-submit-post');
-  btn.textContent='Publicando...'; btn.disabled=true;
-  try{
-    let photoURL=existingUrls.photoURL, audioURL=existingUrls.audioURL, docURL=existingUrls.docURL;
-    if(fileData.photo) photoURL=await uploadToCloudinary(fileData.photo,'photo');
-    if(fileData.audio) audioURL=await uploadToCloudinary(fileData.audio,'audio');
-    if(fileData.doc)   docURL=await uploadToCloudinary(fileData.doc,'doc');
-
-    if(editingPostId){
-      await updateDoc(doc(db,'posts',editingPostId),{text,cat,lat:pendingLatLng.lat,lng:pendingLatLng.lng,photoURL,audioURL,docURL});
-    } else {
-      await addDoc(collection(db,'posts'),{
-        text,cat,lat:pendingLatLng.lat,lng:pendingLatLng.lng,
-        uid:currentUser.uid, userName:currentUser.displayName,
-        userPhoto:currentUser.photoURL||'',
-        createdAt:serverTimestamp(),
-        approved:isAdmin||isMod,
-        photoURL,audioURL,docURL,
-        ratings:{},ratingAvg:0,ratingCount:0,comments:[]
-      });
-      if(!isAdmin&&!isMod) alert('✅ Publicación enviada. Será revisada antes de aparecer.');
-    }
-    closePublishModal();
-  }catch(e){ alert('Error: '+e.message); }
-  finally{ btn.textContent=editingPostId?'Guardar':'Publicar'; btn.disabled=false; }
-};
-
-// ── RATING ──
-window.selectRating = n=>{
-  tempRating=n;
-  document.querySelectorAll('#d-stars-input .star').forEach((s,i)=>s.classList.toggle('filled',i<n));
-  const preview=document.getElementById('d-rating-preview');
-  preview.textContent=`Calificarás este punto con ${'★'.repeat(n)} (${n}/5). ¿Confirmas?`;
-  preview.classList.add('show');
-  document.getElementById('d-rating-confirm').classList.remove('hidden');
-};
-
-window.cancelRating = ()=>{
-  tempRating=0;
-  document.querySelectorAll('#d-stars-input .star').forEach(s=>s.classList.remove('filled'));
-  document.getElementById('d-rating-preview').classList.remove('show');
-  document.getElementById('d-rating-confirm').classList.add('hidden');
-};
-
-window.confirmRating = async()=>{
-  if(!tempRating||!currentPostId) return;
-  const p=allPosts.find(x=>x.id===currentPostId); if(!p) return;
-  const ratings={...(p.ratings||{}), [currentUser.uid]:tempRating};
-  const vals=Object.values(ratings);
-  const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
-  await updateDoc(doc(db,'posts',currentPostId),{ratings,ratingAvg:Math.round(avg*10)/10,ratingCount:vals.length});
-  document.getElementById('d-rate-area').classList.add('hidden');
-};
-
-// ── COMMENTS ──
-window.openCommentForm = ()=>{
-  document.getElementById('d-comment-form').classList.remove('hidden');
-  document.getElementById('d-btn-comment').classList.add('hidden');
-};
-window.cancelComment = ()=>{
-  document.getElementById('d-comment-form').classList.add('hidden');
-  document.getElementById('d-btn-comment').classList.remove('hidden');
-  document.getElementById('d-comment-text').value='';
-};
-window.submitComment = async()=>{
-  const text=document.getElementById('d-comment-text').value.trim();
-  if(!text||!currentPostId) return;
-  const p=allPosts.find(x=>x.id===currentPostId);
-  const comments=[...(p.comments||[]),{uid:currentUser.uid,userName:currentUser.displayName,text,createdAt:Date.now()}];
-  await updateDoc(doc(db,'posts',currentPostId),{comments});
-  cancelComment();
-};
-
-// ── REPORTS ──
-window.reportPost = async()=>{
-  if(!currentUser||!currentPostId) return;
-  const reason=prompt('Describe brevemente el problema:');
-  if(!reason) return;
-  await addDoc(collection(db,'reports'),{
-    postId:currentPostId,
-    reportedBy:currentUser.uid,
-    reporterName:currentUser.displayName,
-    reason, resolved:false,
-    createdAt:serverTimestamp()
-  });
-  alert('Reporte enviado. El equipo de moderación lo revisará.');
-};
-
-async function showReportsList(){
-  const snap=await getDocs(collection(db,'reports'));
-  const reports=snap.docs.filter(d=>!d.data().resolved).map(d=>({id:d.id,...d.data()}));
-  const posts=allPosts;
-  const items=reports.map(r=>{
-    const p=posts.find(x=>x.id===r.postId);
-    return`<div class="report-item">
-      <div class="report-item-header">
-        <strong style="font-size:12px">${r.reporterName}</strong>
-        <button class="btn-primary btn-sm" onclick="resolveReport('${r.id}','${r.postId}')">Resuelto</button>
-      </div>
-      <p style="font-size:12px;color:var(--muted)">${r.reason}</p>
-      ${p?`<p style="font-size:11px;color:var(--muted)">Punto: "${p.text?.substring(0,40)}…" <button class="btn-link" onclick="openDetail('${p.id}')">Ver</button></p>`:''}
-    </div>`;
-  }).join('');
-  showResultsPanel(`🚩 Reportes (${reports.length})`, []);
-  document.getElementById('results-list').innerHTML=items||'<p style="padding:16px;font-size:13px;color:var(--muted)">Sin reportes abiertos.</p>';
-}
-
-window.resolveReport = async(rId,postId)=>{
-  await updateDoc(doc(db,'reports',rId),{resolved:true});
-  showReportsList();
-  loadReportCount();
-};
-
-window.showPostReports = ()=>{ currentCat='__reports'; showReportsList(); };
-
-// ── MESSAGES ──
-let allConversations=[], allMsgs=[], activeThreadKey=null, pickerMode=false;
-
-function subscribeMessages(){
-  if(!currentUser) return;
-  const q1=query(collection(db,'messages'),where('participants','array-contains',currentUser.uid));
-  onSnapshot(q1,snap=>{
-    allMsgs=snap.docs.map(d=>({id:d.id,...d.data()}))
-      .filter(m=>!(m.deletedFor||[]).includes(currentUser.uid))
-      .sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
-    const unread=allMsgs.filter(m=>m.toUid===currentUser.uid&&!m.read).length;
-    const dot=document.getElementById('msg-dot');
-    if(dot) dot.classList.toggle('hidden',unread===0);
-    buildInbox();
-    if(activeThreadKey) renderThread();
-  });
-}
-
-function buildInbox(){
-  const threads={};
-  allMsgs.forEach(m=>{
-    const otherUid=m.fromUid===currentUser.uid?m.toUid:m.fromUid;
-    const otherName=m.fromUid===currentUser.uid?m.toName:m.fromName;
-    if(!threads[otherUid]) threads[otherUid]={msgs:[],other:{uid:otherUid,name:otherName}};
-    threads[otherUid].msgs.push(m);
-  });
-  allConversations=Object.values(threads);
-  renderInbox();
-}
-
-function renderInbox(){
-  const div=document.getElementById('msg-inbox');
-  if(!allConversations.length){ div.innerHTML='<p style="padding:16px;font-size:13px;color:var(--muted)">Sin mensajes.</p>'; return; }
-  div.innerHTML=allConversations.map(t=>{
-    const last=t.msgs[0];
-    const unread=t.msgs.some(m=>!m.read&&m.toUid===currentUser.uid);
-    return`<div class="msg-item ${unread?'unread':''}" onclick="openThread('${t.other.uid}')">
-      <div class="msg-avatar">${(t.other.name||'?').charAt(0)}</div>
-      <div class="msg-info">
-        <div class="msg-from">${t.other.name||'Usuario'}</div>
-        <div class="msg-preview">${last?.text||''}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <span class="msg-time">${last?.createdAt?.toDate?timeAgo(last.createdAt.toDate()):''}</span>
-        <button class="btn-link" title="Borrar conversación" onclick="event.stopPropagation();deleteConversation('${t.other.uid}')">🗑️</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-window.openThread = uid=>{
-  const t=allConversations.find(x=>x.other.uid===uid); if(!t) return;
-  activeThreadKey=uid; msgToUid=uid; msgToName=t.other.name;
-  document.getElementById('msg-win-title').textContent=t.other.name||'Conversación';
-  document.getElementById('msg-back').classList.remove('hidden');
-  document.getElementById('msg-inbox').classList.add('hidden');
-  document.getElementById('msg-thread-view').style.display='flex';
-  renderThread();
-  t.msgs.filter(m=>m.toUid===currentUser.uid&&!m.read).forEach(m=>updateDoc(doc(db,'messages',m.id),{read:true}));
-};
-
-function renderThread(){
-  const t=allConversations.find(x=>x.other.uid===activeThreadKey); if(!t) return;
-  const msgs=[...t.msgs].sort((a,b)=>(a.createdAt?.toMillis?.()||0)-(b.createdAt?.toMillis?.()||0));
-  document.getElementById('msg-thread').innerHTML=msgs.map(m=>`
-    <div><div class="msg-bubble ${m.fromUid===currentUser.uid?'mine':'theirs'}">${m.text}</div></div>`).join('');
-  const th=document.getElementById('msg-thread');
-  th.scrollTop=th.scrollHeight;
-}
-
-window.deleteConversation = async uid=>{
-  if(!confirm('¿Borrar esta conversación? Solo se borra para ti.')) return;
-  const t=allConversations.find(x=>x.other.uid===uid); if(!t) return;
-  for(const m of t.msgs){
-    await updateDoc(doc(db,'messages',m.id),{deletedFor:arrayUnion(currentUser.uid)});
-  }
-  if(activeThreadKey===uid) showInbox();
-};
-
-window.showInbox = ()=>{
-  document.getElementById('msg-win-title').textContent='Mensajes';
-  document.getElementById('msg-back').classList.add('hidden');
-  document.getElementById('msg-inbox').classList.remove('hidden');
-  document.getElementById('msg-thread-view').style.display='none';
-  activeThreadKey=null;
-};
-
-window.sendReply = async()=>{
-  const text=document.getElementById('msg-reply-text').value.trim();
-  if(!text||!msgToUid) return;
-  await addDoc(collection(db,'messages'),{
-    fromUid:currentUser.uid, fromName:currentUser.displayName,
-    toUid:msgToUid, toName:msgToName,
-    text, read:false, createdAt:serverTimestamp(),
-    participants:[currentUser.uid,msgToUid], deletedFor:[]
-  });
-  document.getElementById('msg-reply-text').value='';
-};
-
-window.toggleMessages = ()=>{
-  document.getElementById('msg-window').classList.toggle('open');
-  showInbox();
-};
-
-// New message from a point or comment
-window.msgToPostOwner = ()=>{
-  const p=allPosts.find(x=>x.id===currentPostId); if(!p||!currentUser) return;
-  msgToUid=p.uid; msgToName=p.userName; pickerMode=false;
-  document.getElementById('new-msg-user-select').classList.add('hidden');
-  document.getElementById('new-msg-to-name').textContent=p.userName;
-  document.getElementById('new-msg-text').value='';
-  document.getElementById('new-msg-modal').classList.remove('hidden');
-};
-
-window.msgToComment = (uid,name)=>{
-  msgToUid=uid; msgToName=name; pickerMode=false;
-  document.getElementById('new-msg-user-select').classList.add('hidden');
-  document.getElementById('new-msg-to-name').textContent=name;
-  document.getElementById('new-msg-text').value='';
-  document.getElementById('new-msg-modal').classList.remove('hidden');
-};
-
-// Admin/Mod: pick any registered user
-window.openUserPicker = async()=>{
-  const snap=await getDocs(collection(db,'users'));
-  const users=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(u=>u.uid!==currentUser.uid);
-  const sel=document.getElementById('new-msg-user-select');
-  sel.innerHTML='<option value="">— Selecciona usuario —</option>'+
-    users.map(u=>`<option value="${u.uid}|${(u.name||'Usuario').replace(/\|/g,'')}">${u.name||'Usuario'}</option>`).join('');
-  sel.classList.remove('hidden');
-  pickerMode=true;
-  document.getElementById('new-msg-to-name').textContent='';
-  document.getElementById('new-msg-text').value='';
-  document.getElementById('new-msg-modal').classList.remove('hidden');
-};
-
-window.sendNewMessage = async()=>{
-  const text=document.getElementById('new-msg-text').value.trim();
-  if(!text) return;
-  if(pickerMode){
-    const val=document.getElementById('new-msg-user-select').value;
-    if(!val){ alert('Selecciona un usuario.'); return; }
-    const [uid,name]=val.split('|');
-    msgToUid=uid; msgToName=name;
-  }
-  if(!msgToUid) return;
-  await addDoc(collection(db,'messages'),{
-    fromUid:currentUser.uid, fromName:currentUser.displayName,
-    toUid:msgToUid, toName:msgToName,
-    text, read:false, createdAt:serverTimestamp(),
-    participants:[currentUser.uid,msgToUid], deletedFor:[]
-  });
-  closeNewMsgModal();
-  alert('Mensaje enviado.');
-};
-
-window.closeNewMsgModal = ()=>{ pickerMode=false; document.getElementById('new-msg-modal').classList.add('hidden'); };
-window.closeNewMsgOnBackdrop = e=>{ if(e.target.id==='new-msg-modal') closeNewMsgModal(); };
-
-// ── AUTH MODAL ──
-window.openAuthModal = ()=>document.getElementById('auth-modal').classList.remove('hidden');
-window.closeAuthModal = ()=>document.getElementById('auth-modal').classList.add('hidden');
-window.closeAuthOnBackdrop = e=>{ if(e.target.id==='auth-modal') closeAuthModal(); };
-
-// ── ADMIN ──
-async function loadModerators(){
-  const snap=await getDocs(collection(db,'moderators'));
-  moderators=snap.docs.map(d=>({email:d.id,...d.data()}));
-}
-
-window.openAdminModal = ()=>{
-  renderModList();
-  document.getElementById('admin-modal').classList.remove('hidden');
-};
-window.closeAdminModal = ()=>document.getElementById('admin-modal').classList.add('hidden');
-window.closeAdminOnBackdrop = e=>{ if(e.target.id==='admin-modal') closeAdminModal(); };
-
-window.addModerator = async()=>{
-  const email=document.getElementById('mod-email-input').value.trim().toLowerCase();
-  if(!email){ alert('Escribe un correo.'); return; }
-  await setDoc(doc(db,'moderators',email),{addedBy:currentUser.uid,addedAt:serverTimestamp()});
-  await loadModerators();
-  renderModList();
-  document.getElementById('mod-email-input').value='';
-};
-
-function renderModList(){
-  document.getElementById('mod-list').innerHTML=moderators.map(m=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
-      <span>${m.email}</span>
-      <button class="btn-link" onclick="removeModerator('${m.email}')">🗑️</button>
-    </div>`).join('')||'<p style="font-size:12px;color:var(--muted)">Sin moderadores.</p>';
-}
-
-window.removeModerator = async email=>{
-  await deleteDoc(doc(db,'moderators',email));
-  await loadModerators();
-  renderModList();
-};
-
-window.exportData = async()=>{
-  const snap=await getDocs(collection(db,'posts'));
-  const data=snap.docs.map(d=>({id:d.id,...d.data(),createdAt:d.data().createdAt?.toDate?.()?.toISOString()}));
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`rio-la-silla-backup-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-};
-
-// ── MOBILE SIDEBAR ──
-window.toggleMobileSidebar = ()=>document.getElementById('sidebar').classList.toggle('mobile-open');
-
-// ── UTILS ──
-function timeAgo(date){
-  const s=Math.floor((Date.now()-date)/1000);
-  if(s<60) return 'ahora';
-  if(s<3600) return `hace ${Math.floor(s/60)}m`;
-  if(s<86400) return `hace ${Math.floor(s/3600)}h`;
-  return `hace ${Math.floor(s/86400)}d`;
-}
-</script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
