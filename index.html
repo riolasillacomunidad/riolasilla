@@ -90,6 +90,8 @@
         <div class="admin-section-title">Moderación</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-primary btn-sm hidden" id="d-btn-approve" onclick="approvePost()">✅ Aprobar</button>
+          <button class="btn-sm hidden" id="d-btn-deactivate" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="toggleActive(false)">🔴 Desactivar</button>
+          <button class="btn-sm hidden" id="d-btn-activate" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;cursor:pointer;color:#166534" onclick="toggleActive(true)">🟢 Activar</button>
           <button class="btn-sm" id="d-btn-reports-count" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="showPostReports()">🚩 Reportes (<span id="d-report-count">0</span>)</button>
         </div>
       </div>
@@ -462,8 +464,9 @@ onSnapshot(postsQ, snap=>{
 
 // ── SIDEBAR ──
 function renderSidebar(){
-  const approved = allPosts.filter(p=>p.approved);
+  const approved = allPosts.filter(p=>p.approved && p.active!==false);
   const pending  = allPosts.filter(p=>!p.approved);
+  const inactive = allPosts.filter(p=>p.approved && p.active===false);
   const counts   = {};
   Object.keys(CATS).forEach(k=>{ counts[k]=approved.filter(p=>p.cat===k).length; });
 
@@ -486,6 +489,10 @@ function renderSidebar(){
       <div class="cat-item cat-pending ${currentCat==='__pending'?'active':''}" onclick="selectCat('__pending')">
         <span class="cat-label">⏳ Pendientes</span>
         <span class="cat-count">${pending.length}</span>
+      </div>
+      <div class="cat-item" style="color:#6B7280" onclick="selectCat('__inactive')" class="${currentCat==='__inactive'?'active':''}">
+        <span class="cat-label">🔴 Inactivos</span>
+        <span class="cat-count">${inactive.length}</span>
       </div>
       <div class="cat-item cat-reports ${currentCat==='__reports'?'active':''}" onclick="selectCat('__reports')">
         <span class="cat-label">🚩 Reportes</span>
@@ -514,9 +521,10 @@ window.selectCat = cat=>{
   currentCat=cat; searchMode=false;
   document.getElementById('search-input').value='';
   if(cat==='__reports'){ showReportsList(); return; }
-  const list = cat===null ? allPosts.filter(p=>p.approved)
+  const list = cat===null ? allPosts.filter(p=>p.approved&&p.active!==false)
     : cat==='__pending' ? allPosts.filter(p=>!p.approved)
-    : allPosts.filter(p=>p.approved&&p.cat===cat);
+    : cat==='__inactive' ? allPosts.filter(p=>p.approved&&p.active===false)
+    : allPosts.filter(p=>p.approved&&p.active!==false&&p.cat===cat);
   showResultsPanel(cat?( CATS[cat]?.label||cat ):'Todas las publicaciones', list);
   renderMarkers();
   renderSidebar();
@@ -526,7 +534,7 @@ window.handleSearch = ()=>{
   const q=document.getElementById('search-input').value.toLowerCase().trim();
   if(!q){ searchMode=false; closeResults(); renderSidebar(); return; }
   searchMode=true; currentCat=null;
-  const list=allPosts.filter(p=>p.approved&&p.text?.toLowerCase().includes(q));
+  const list=allPosts.filter(p=>p.approved&&p.active!==false&&p.text?.toLowerCase().includes(q));
   showResultsPanel(`Resultados: "${q}"`, list);
   renderSidebar();
 };
@@ -541,7 +549,8 @@ function showResultsPanel(title, posts){
       const ts=p.createdAt?.toDate?timeAgo(p.createdAt.toDate()):'';
       const c=CATS[p.cat]||{label:p.cat,color:'#888'};
       const stars=p.ratingAvg?'★'.repeat(Math.round(p.ratingAvg)):'';
-      const pend=!p.approved?'<span class="badge-pending-sm">Pendiente</span>':'';
+      const pend=!p.approved?'<span class="badge-pending-sm">Pendiente</span>'
+        :p.active===false?'<span class="badge-pending-sm" style="background:#FEE2E2;color:#991B1B">Inactivo</span>':'';
       return`<div class="post-card" onclick="openDetail('${p.id}')">
         <div class="post-card-top">
           <span class="cat-dot-sm" style="background:${c.color}"></span>
@@ -565,6 +574,7 @@ function renderMarkers(){
   clusterGroup.clearLayers();
   const visible = allPosts.filter(p=>{
     if(!p.approved && !(isAdmin||isMod)) return false;
+    if(p.active===false && !(isAdmin||isMod)) return false;
     if(!p.lat) return false;
     return true;
   });
@@ -613,6 +623,9 @@ function renderDetail(p){
   const adminPanel=document.getElementById('d-admin');
   adminPanel.classList.toggle('hidden',!(isAdmin||isMod));
   document.getElementById('d-btn-approve').classList.toggle('hidden',p.approved);
+  // active/inactive toggle — only show when post is approved
+  document.getElementById('d-btn-deactivate').classList.toggle('hidden',!p.approved||(p.active===false));
+  document.getElementById('d-btn-activate').classList.toggle('hidden',!p.approved||(p.active!==false));
   const reports=p.reports||[];
   document.getElementById('d-report-count').textContent=reports.length;
 
@@ -665,7 +678,12 @@ window.closeDetail = ()=>{
 // ── APPROVE / DELETE ──
 window.approvePost = async()=>{
   if(!currentPostId) return;
-  await updateDoc(doc(db,'posts',currentPostId),{approved:true});
+  await updateDoc(doc(db,'posts',currentPostId),{approved:true,active:true});
+};
+
+window.toggleActive = async(active)=>{
+  if(!currentPostId) return;
+  await updateDoc(doc(db,'posts',currentPostId),{active});
 };
 
 window.deletePost = async()=>{
