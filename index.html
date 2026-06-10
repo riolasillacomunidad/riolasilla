@@ -23,7 +23,7 @@
   <div class="header-right">
     <div id="user-info" class="hidden" style="display:flex;align-items:center;gap:8px">
       <button class="btn-msg" id="btn-msg" onclick="toggleMessages()">
-        ✉️<span class="msg-count hidden" id="msg-count">0</span>
+        ✉️<span class="msg-dot hidden" id="msg-dot"></span>
       </button>
       <img id="user-avatar" src="" alt="" class="avatar"/>
       <span id="user-name" style="font-size:13px;font-weight:500"></span>
@@ -116,8 +116,7 @@
         <div class="section-title">Comentarios</div>
         <div id="d-comments"></div>
         <div id="d-comment-form" class="hidden" style="margin-top:10px">
-          <textarea id="d-comment-text" class="input-full" rows="2" placeholder="Escribe un comentario..." oninput="previewComment()"></textarea>
-          <div class="bubble-preview" id="d-comment-preview"></div>
+          <textarea id="d-comment-text" class="input-full" rows="2" placeholder="Escribe un comentario..."></textarea>
           <div style="display:flex;gap:8px;margin-top:6px">
             <button class="btn-secondary btn-sm" onclick="cancelComment()">Cancelar</button>
             <button class="btn-primary btn-sm" onclick="submitComment()">Publicar</button>
@@ -136,7 +135,10 @@
       <button class="msg-back hidden" id="msg-back" onclick="showInbox()">←</button>
       <h3 id="msg-win-title">Mensajes</h3>
     </div>
-    <button class="btn-close" onclick="toggleMessages()">✕</button>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn-icon hidden" id="btn-new-msg" title="Nuevo mensaje" onclick="openUserPicker()">➕</button>
+      <button class="btn-close" onclick="toggleMessages()">✕</button>
+    </div>
   </div>
   <div id="msg-inbox" class="msg-list"></div>
   <div id="msg-thread-view" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
@@ -236,6 +238,7 @@
       <button class="btn-close" onclick="closeNewMsgModal()">✕</button>
     </div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Para: <strong id="new-msg-to-name"></strong></p>
+    <select id="new-msg-user-select" class="input-full hidden"></select>
     <textarea id="new-msg-text" class="input-full" rows="4" placeholder="Escribe tu mensaje..."></textarea>
     <div class="modal-footer">
       <button onclick="closeNewMsgModal()" class="btn-secondary">Cancelar</button>
@@ -441,6 +444,8 @@ onAuthStateChanged(auth, async user=>{
     document.getElementById('user-name').textContent = user.displayName?.split(' ')[0]||'';
     document.getElementById('badge-admin').classList.toggle('hidden',!isAdmin);
     document.getElementById('badge-mod').classList.toggle('hidden',!isMod);
+    setDoc(doc(db,'users',user.uid),{name:user.displayName||'',photo:user.photoURL||''},{merge:true});
+    document.getElementById('btn-new-msg').classList.toggle('hidden',!(isAdmin||isMod));
     subscribeMessages();
     if(isAdmin) loadModerators();
   } else {
@@ -872,13 +877,6 @@ window.cancelComment = ()=>{
   document.getElementById('d-comment-form').classList.add('hidden');
   document.getElementById('d-btn-comment').classList.remove('hidden');
   document.getElementById('d-comment-text').value='';
-  document.getElementById('d-comment-preview').classList.remove('show');
-};
-window.previewComment = ()=>{
-  const txt=document.getElementById('d-comment-text').value.trim();
-  const prev=document.getElementById('d-comment-preview');
-  if(txt){ prev.textContent=`Vista previa: "${txt}"`; prev.classList.add('show'); }
-  else prev.classList.remove('show');
 };
 window.submitComment = async()=>{
   const text=document.getElementById('d-comment-text').value.trim();
@@ -932,25 +930,30 @@ window.resolveReport = async(rId,postId)=>{
 window.showPostReports = ()=>{ currentCat='__reports'; showReportsList(); };
 
 // ── MESSAGES ──
-let allConversations=[];
+let allConversations=[], allMsgs=[], activeThreadKey=null, pickerMode=false;
 
 function subscribeMessages(){
   if(!currentUser) return;
-  const q1=query(collection(db,'messages'),where('toUid','==',currentUser.uid),orderBy('createdAt','desc'));
+  const q1=query(collection(db,'messages'),where('participants','array-contains',currentUser.uid));
   onSnapshot(q1,snap=>{
-    const unread=snap.docs.filter(d=>!d.data().read).length;
-    const cnt=document.getElementById('msg-count');
-    cnt.textContent=unread; cnt.classList.toggle('hidden',unread===0);
-    buildInbox(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allMsgs=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(m=>!(m.deletedFor||[]).includes(currentUser.uid))
+      .sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+    const unread=allMsgs.filter(m=>m.toUid===currentUser.uid&&!m.read).length;
+    const dot=document.getElementById('msg-dot');
+    if(dot) dot.classList.toggle('hidden',unread===0);
+    buildInbox();
+    if(activeThreadKey) renderThread();
   });
 }
 
-function buildInbox(msgs){
+function buildInbox(){
   const threads={};
-  msgs.forEach(m=>{
-    const key=[m.fromUid,m.toUid].sort().join('_');
-    if(!threads[key]) threads[key]={msgs:[],other:m.fromUid===currentUser.uid?{uid:m.toUid,name:m.toName}:{uid:m.fromUid,name:m.fromName}};
-    threads[key].msgs.push(m);
+  allMsgs.forEach(m=>{
+    const otherUid=m.fromUid===currentUser.uid?m.toUid:m.fromUid;
+    const otherName=m.fromUid===currentUser.uid?m.toName:m.fromName;
+    if(!threads[otherUid]) threads[otherUid]={msgs:[],other:{uid:otherUid,name:otherName}};
+    threads[otherUid].msgs.push(m);
   });
   allConversations=Object.values(threads);
   renderInbox();
@@ -959,45 +962,50 @@ function buildInbox(msgs){
 function renderInbox(){
   const div=document.getElementById('msg-inbox');
   if(!allConversations.length){ div.innerHTML='<p style="padding:16px;font-size:13px;color:var(--muted)">Sin mensajes.</p>'; return; }
-  div.innerHTML=allConversations.map((t,i)=>{
+  div.innerHTML=allConversations.map(t=>{
     const last=t.msgs[0];
-    const unread=t.msgs.filter(m=>!m.read&&m.toUid===currentUser.uid).length;
-    return`<div class="msg-item ${unread?'unread':''}" onclick="openThread(${i})">
-      <div class="msg-avatar">${t.other.name?.charAt(0)||'?'}</div>
+    const unread=t.msgs.some(m=>!m.read&&m.toUid===currentUser.uid);
+    return`<div class="msg-item ${unread?'unread':''}" onclick="openThread('${t.other.uid}')">
+      <div class="msg-avatar">${(t.other.name||'?').charAt(0)}</div>
       <div class="msg-info">
-        <div class="msg-from">${t.other.name}</div>
+        <div class="msg-from">${t.other.name||'Usuario'}</div>
         <div class="msg-preview">${last?.text||''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="msg-time">${last?.createdAt?.toDate?timeAgo(last.createdAt.toDate()):''}</span>
-        ${unread?`<span class="msg-count" style="position:static">${unread}</span>`:''}
+        <button class="btn-link" title="Borrar conversación" onclick="event.stopPropagation();deleteConversation('${t.other.uid}')">🗑️</button>
       </div>
     </div>`;
   }).join('');
 }
 
-window.openThread = async i=>{
-  const t=allConversations[i];
-  activeThreadId=i;
-  msgToUid=t.other.uid; msgToName=t.other.name;
-  document.getElementById('msg-win-title').textContent=t.other.name;
+window.openThread = uid=>{
+  const t=allConversations.find(x=>x.other.uid===uid); if(!t) return;
+  activeThreadKey=uid; msgToUid=uid; msgToName=t.other.name;
+  document.getElementById('msg-win-title').textContent=t.other.name||'Conversación';
   document.getElementById('msg-back').classList.remove('hidden');
   document.getElementById('msg-inbox').classList.add('hidden');
-  const tv=document.getElementById('msg-thread-view');
-  tv.style.display='flex';
+  document.getElementById('msg-thread-view').style.display='flex';
+  renderThread();
+  t.msgs.filter(m=>m.toUid===currentUser.uid&&!m.read).forEach(m=>updateDoc(doc(db,'messages',m.id),{read:true}));
+};
 
-  // Load full thread
-  const q=query(collection(db,'messages'),where('participants','array-contains',currentUser.uid),orderBy('createdAt','asc'));
-  const snap=await getDocs(q);
-  const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(m=>m.participants.includes(msgToUid));
-
+function renderThread(){
+  const t=allConversations.find(x=>x.other.uid===activeThreadKey); if(!t) return;
+  const msgs=[...t.msgs].sort((a,b)=>(a.createdAt?.toMillis?.()||0)-(b.createdAt?.toMillis?.()||0));
   document.getElementById('msg-thread').innerHTML=msgs.map(m=>`
-    <div>
-      <div class="msg-bubble ${m.fromUid===currentUser.uid?'mine':'theirs'}">${m.text}</div>
-    </div>`).join('');
+    <div><div class="msg-bubble ${m.fromUid===currentUser.uid?'mine':'theirs'}">${m.text}</div></div>`).join('');
+  const th=document.getElementById('msg-thread');
+  th.scrollTop=th.scrollHeight;
+}
 
-  // Mark as read
-  msgs.filter(m=>m.toUid===currentUser.uid&&!m.read).forEach(m=>updateDoc(doc(db,'messages',m.id),{read:true}));
+window.deleteConversation = async uid=>{
+  if(!confirm('¿Borrar esta conversación? Solo se borra para ti.')) return;
+  const t=allConversations.find(x=>x.other.uid===uid); if(!t) return;
+  for(const m of t.msgs){
+    await updateDoc(doc(db,'messages',m.id),{deletedFor:arrayUnion(currentUser.uid)});
+  }
+  if(activeThreadKey===uid) showInbox();
 };
 
 window.showInbox = ()=>{
@@ -1005,7 +1013,7 @@ window.showInbox = ()=>{
   document.getElementById('msg-back').classList.add('hidden');
   document.getElementById('msg-inbox').classList.remove('hidden');
   document.getElementById('msg-thread-view').style.display='none';
-  activeThreadId=null;
+  activeThreadKey=null;
 };
 
 window.sendReply = async()=>{
@@ -1015,44 +1023,69 @@ window.sendReply = async()=>{
     fromUid:currentUser.uid, fromName:currentUser.displayName,
     toUid:msgToUid, toName:msgToName,
     text, read:false, createdAt:serverTimestamp(),
-    participants:[currentUser.uid,msgToUid]
+    participants:[currentUser.uid,msgToUid], deletedFor:[]
   });
   document.getElementById('msg-reply-text').value='';
-  openThread(activeThreadId);
 };
 
-window.toggleMessages = ()=>document.getElementById('msg-window').classList.toggle('open');
+window.toggleMessages = ()=>{
+  document.getElementById('msg-window').classList.toggle('open');
+  showInbox();
+};
 
-// New message modal
+// New message from a point or comment
 window.msgToPostOwner = ()=>{
   const p=allPosts.find(x=>x.id===currentPostId); if(!p||!currentUser) return;
-  msgToUid=p.uid; msgToName=p.userName;
+  msgToUid=p.uid; msgToName=p.userName; pickerMode=false;
+  document.getElementById('new-msg-user-select').classList.add('hidden');
   document.getElementById('new-msg-to-name').textContent=p.userName;
   document.getElementById('new-msg-text').value='';
   document.getElementById('new-msg-modal').classList.remove('hidden');
 };
 
 window.msgToComment = (uid,name)=>{
-  msgToUid=uid; msgToName=name;
+  msgToUid=uid; msgToName=name; pickerMode=false;
+  document.getElementById('new-msg-user-select').classList.add('hidden');
   document.getElementById('new-msg-to-name').textContent=name;
+  document.getElementById('new-msg-text').value='';
+  document.getElementById('new-msg-modal').classList.remove('hidden');
+};
+
+// Admin/Mod: pick any registered user
+window.openUserPicker = async()=>{
+  const snap=await getDocs(collection(db,'users'));
+  const users=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(u=>u.uid!==currentUser.uid);
+  const sel=document.getElementById('new-msg-user-select');
+  sel.innerHTML='<option value="">— Selecciona usuario —</option>'+
+    users.map(u=>`<option value="${u.uid}|${(u.name||'Usuario').replace(/\|/g,'')}">${u.name||'Usuario'}</option>`).join('');
+  sel.classList.remove('hidden');
+  pickerMode=true;
+  document.getElementById('new-msg-to-name').textContent='';
   document.getElementById('new-msg-text').value='';
   document.getElementById('new-msg-modal').classList.remove('hidden');
 };
 
 window.sendNewMessage = async()=>{
   const text=document.getElementById('new-msg-text').value.trim();
-  if(!text||!msgToUid) return;
+  if(!text) return;
+  if(pickerMode){
+    const val=document.getElementById('new-msg-user-select').value;
+    if(!val){ alert('Selecciona un usuario.'); return; }
+    const [uid,name]=val.split('|');
+    msgToUid=uid; msgToName=name;
+  }
+  if(!msgToUid) return;
   await addDoc(collection(db,'messages'),{
     fromUid:currentUser.uid, fromName:currentUser.displayName,
     toUid:msgToUid, toName:msgToName,
     text, read:false, createdAt:serverTimestamp(),
-    participants:[currentUser.uid,msgToUid]
+    participants:[currentUser.uid,msgToUid], deletedFor:[]
   });
   closeNewMsgModal();
   alert('Mensaje enviado.');
 };
 
-window.closeNewMsgModal = ()=>document.getElementById('new-msg-modal').classList.add('hidden');
+window.closeNewMsgModal = ()=>{ pickerMode=false; document.getElementById('new-msg-modal').classList.add('hidden'); };
 window.closeNewMsgOnBackdrop = e=>{ if(e.target.id==='new-msg-modal') closeNewMsgModal(); };
 
 // ── AUTH MODAL ──

@@ -207,3 +207,6 @@ textarea.input-full { resize: vertical; }
 @media (min-width: 768px) {
   .btn-menu { display: none; }
 }
+
+/* Red dot for unread messages */
+.msg-dot { position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--red); border: 1.5px solid #fff; }
