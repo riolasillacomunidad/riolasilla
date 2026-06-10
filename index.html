@@ -73,9 +73,6 @@
       </div>
       <div class="detail-actions">
         <button class="btn-icon" id="d-btn-msg" title="Enviar mensaje" onclick="msgToPostOwner()">✉️</button>
-        <button class="btn-icon hidden" id="d-btn-move" title="Desplazar punto" onclick="startMovePoint()">🔀</button>
-        <button class="btn-icon hidden" id="d-btn-edit" title="Editar" onclick="openEditModal()">✏️</button>
-        <button class="btn-icon hidden" id="d-btn-delete" title="Eliminar" onclick="deletePost()">🗑️</button>
         <button class="btn-icon" id="d-btn-report" title="Reportar abuso" onclick="reportPost()">🚩</button>
         <button class="btn-close" onclick="closeDetail()">✕</button>
       </div>
@@ -87,12 +84,15 @@
 
       <!-- Admin/Mod panel -->
       <div class="admin-section hidden" id="d-admin">
-        <div class="admin-section-title">Moderación</div>
+        <div class="admin-section-title" id="d-admin-title">Gestión</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sm hidden" id="d-btn-move" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="startMovePoint()">🔀 Desplazar</button>
+          <button class="btn-sm hidden" id="d-btn-edit" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="openEditModal()">✏️ Editar</button>
+          <button class="btn-sm hidden" id="d-btn-delete" style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;cursor:pointer;color:#991B1B" onclick="deletePost()">🗑️ Eliminar</button>
           <button class="btn-primary btn-sm hidden" id="d-btn-approve" onclick="approvePost()">✅ Aprobar</button>
           <button class="btn-sm hidden" id="d-btn-deactivate" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="toggleActive(false)">🔴 Desactivar</button>
           <button class="btn-sm hidden" id="d-btn-activate" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;cursor:pointer;color:#166534" onclick="toggleActive(true)">🟢 Activar</button>
-          <button class="btn-sm" id="d-btn-reports-count" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="showPostReports()">🚩 Reportes (<span id="d-report-count">0</span>)</button>
+          <button class="btn-sm hidden" id="d-btn-reports-count" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="showPostReports()">🚩 Reportes (<span id="d-report-count">0</span>)</button>
         </div>
       </div>
 
@@ -613,19 +613,22 @@ function renderDetail(p){
   // Buttons visibility
   const isOwner = currentUser && p.uid===currentUser.uid;
   const canEdit = isOwner||isAdmin||isMod;
-  document.getElementById('d-btn-edit').classList.toggle('hidden',!canEdit);
-  document.getElementById('d-btn-delete').classList.toggle('hidden',!canEdit);
-  document.getElementById('d-btn-move').classList.toggle('hidden',!canEdit);
   document.getElementById('d-btn-msg').classList.toggle('hidden',!currentUser||isOwner);
   document.getElementById('d-btn-report').classList.toggle('hidden',!currentUser||isOwner);
 
-  // Admin panel
+  // Gestión / Moderación panel — visible to owner, admin and mods
   const adminPanel=document.getElementById('d-admin');
-  adminPanel.classList.toggle('hidden',!(isAdmin||isMod));
-  document.getElementById('d-btn-approve').classList.toggle('hidden',p.approved);
-  // active/inactive toggle — only show when post is approved
-  document.getElementById('d-btn-deactivate').classList.toggle('hidden',!p.approved||(p.active===false));
-  document.getElementById('d-btn-activate').classList.toggle('hidden',!p.approved||(p.active!==false));
+  adminPanel.classList.toggle('hidden',!canEdit);
+  document.getElementById('d-admin-title').textContent=(isAdmin||isMod)?'Moderación':'Gestión de tu publicación';
+  // owner + mod buttons
+  document.getElementById('d-btn-move').classList.toggle('hidden',!canEdit);
+  document.getElementById('d-btn-edit').classList.toggle('hidden',!canEdit);
+  document.getElementById('d-btn-delete').classList.toggle('hidden',!canEdit);
+  // mod-only buttons
+  document.getElementById('d-btn-approve').classList.toggle('hidden',!(isAdmin||isMod)||p.approved);
+  document.getElementById('d-btn-deactivate').classList.toggle('hidden',!(isAdmin||isMod)||!p.approved||(p.active===false));
+  document.getElementById('d-btn-activate').classList.toggle('hidden',!(isAdmin||isMod)||!p.approved||(p.active!==false));
+  document.getElementById('d-btn-reports-count').classList.toggle('hidden',!(isAdmin||isMod));
   const reports=p.reports||[];
   document.getElementById('d-report-count').textContent=reports.length;
 
