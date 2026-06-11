@@ -11,16 +11,16 @@ export const CLOUDINARY = { cloud: 'dfkfaae4l', preset: 'riolasilla_uploads' };
 export const ADMIN_UIDS = ['B25MIYOUPEZ1wEwXUCddDxAOzxh1'];
 
 export const CATS = {
-  arte:            { label:'Arte y belleza',        icon:'palette',        color:'#D6336C' },
-  comunidad:       { label:'Comunidad',              icon:'heart-handshake',color:'#9C36B5' },
+  arte:            { label:'Arte y cultura',         icon:'palette',        color:'#D6336C' },
+  comunidad:       { label:'Comunidad y eventos',    icon:'heart-handshake',color:'#9C36B5' },
   denuncia:        { label:'Denuncia y reportes',    icon:'alert-triangle', color:'#E03131' },
   deporte:         { label:'Deporte',                icon:'bike',           color:'#E8590C' },
-  educacion:       { label:'Educación',              icon:'book-open',      color:'#1971C2' },
+  educacion:       { label:'Educación ambiental',    icon:'book-open',      color:'#1971C2' },
   flora:           { label:'Flora, Fauna y Agua',    icon:'leaf',           color:'#2F9E44' },
   historia:        { label:'Historia y relatos',     icon:'scroll',         color:'#846358' },
   infraestructura: { label:'Infraestructura',        icon:'hard-hat',       color:'#5C677D' },
-  mascotas:        { label:'Mascotas',               icon:'paw-print',      color:'#D9480F' },
   mobiliario:      { label:'Mobiliario Urbano',      icon:'armchair',       color:'#0B7285' },
+  paisajes:        { label:'Paisajes',               icon:'mountain',       color:'#15AABF' },
 };
 
 export const MAP_CENTER = [25.6560, -100.2260];

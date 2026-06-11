@@ -5,16 +5,16 @@ import { CATS, CLOUDINARY, SITE_URL } from './config.js';
 import { map, startPlacing } from './map.js';
 
 const CAT_HINTS = {
-  arte:            'Describe la obra o elemento artístico: qué es, dónde está y por qué vale la pena conocerlo.',
-  comunidad:       'Cuenta la actividad o iniciativa vecinal: quiénes participan y cómo pueden sumarse otros.',
+  arte:            'Describe la obra o expresión cultural: qué es, quién la hizo (si se sabe) y por qué vale la pena conocerla.',
+  comunidad:       'Cuenta el evento o iniciativa: fecha, lugar, quiénes participan y cómo pueden sumarse otros.',
   denuncia:        'Incluye la ubicación exacta, una foto del problema y desde cuándo lo observas.',
   deporte:         'Describe el espacio o actividad: horarios, condiciones y recomendaciones para quien quiera ir.',
-  educacion:       'Comparte el dato o recurso educativo y, si aplica, cita tu fuente.',
+  educacion:       'Comparte el recurso o dato de educación ambiental y, si aplica, cita tu fuente.',
   flora:           'Describe lo que observaste: especie, fecha y condición en que se encuentra.',
   historia:        'Cuenta la historia: quién, cuándo y dónde. Si viene de un libro o de una persona, menciona la fuente.',
   infraestructura: 'Describe el elemento (puente, sendero, señalética) y su estado actual.',
-  mascotas:        'Indica si es avistamiento, extravío o adopción; incluye una foto y señas particulares.',
   mobiliario:      'Describe el mobiliario (banca, juego, luminaria) y su estado o lo que necesita.',
+  paisajes:        'Comparte la vista: desde dónde se aprecia y en qué momento del día luce mejor.',
 };
 
 window.updateCatHint = () => {
