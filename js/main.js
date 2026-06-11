@@ -9,8 +9,30 @@ import { getOpenReports } from './moderation.js';
 initMap();
 subscribePosts();
 
-bus.addEventListener('posts-changed', renderNav);
+bus.addEventListener('posts-changed', () => { renderNav(); refreshOpenResults(); });
 bus.addEventListener('auth-changed', renderNav);
+
+function refreshOpenResults(){
+  if(!$('results-panel').classList.contains('open')) return;
+  if(S.cat === '__reports') return; // reports list refreshes on its own actions
+  if(S.search){
+    const list = visiblePosts().filter(p=>p.text?.toLowerCase().includes(S.search));
+    showResults(`Resultados: "${S.search}"`, list);
+    return;
+  }
+  const cat = S.cat;
+  const list =
+    cat===null        ? visiblePosts() :
+    cat==='__pending' ? S.posts.filter(p=>!p.approved) :
+    cat==='__inactive'? S.posts.filter(p=>p.approved && p.active===false) :
+    visiblePosts().filter(p=>p.cat===cat);
+  const title =
+    cat===null ? 'Todas las publicaciones' :
+    cat==='__pending' ? 'Pendientes de aprobación' :
+    cat==='__inactive' ? 'Puntos inactivos' :
+    CATS[cat]?.label || cat;
+  showResults(title, list);
+}
 
 // ── Sidebar (desktop) + chips (mobile) ──
 function renderNav(){

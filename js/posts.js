@@ -4,6 +4,29 @@ import { S, $, emit, timeAgo, refreshIcons, canModerate } from './state.js';
 import { CATS, CLOUDINARY, SITE_URL } from './config.js';
 import { map, startPlacing } from './map.js';
 
+const CAT_HINTS = {
+  arte:            'Describe la obra o elemento artístico: qué es, dónde está y por qué vale la pena conocerlo.',
+  comunidad:       'Cuenta la actividad o iniciativa vecinal: quiénes participan y cómo pueden sumarse otros.',
+  denuncia:        'Incluye la ubicación exacta, una foto del problema y desde cuándo lo observas.',
+  deporte:         'Describe el espacio o actividad: horarios, condiciones y recomendaciones para quien quiera ir.',
+  educacion:       'Comparte el dato o recurso educativo y, si aplica, cita tu fuente.',
+  flora:           'Describe lo que observaste: especie, fecha y condición en que se encuentra.',
+  historia:        'Cuenta la historia: quién, cuándo y dónde. Si viene de un libro o de una persona, menciona la fuente.',
+  infraestructura: 'Describe el elemento (puente, sendero, señalética) y su estado actual.',
+  mascotas:        'Indica si es avistamiento, extravío o adopción; incluye una foto y señas particulares.',
+  mobiliario:      'Describe el mobiliario (banca, juego, luminaria) y su estado o lo que necesita.',
+};
+
+window.updateCatHint = () => {
+  const hint = CAT_HINTS[$('pub-cat').value] || '';
+  $('cat-hint').textContent = hint;
+  $('cat-hint').style.display = hint ? 'block' : 'none';
+};
+
+window.openAboutModal = () => { $('about-modal').classList.remove('hidden'); refreshIcons(); };
+window.closeAboutModal = () => $('about-modal').classList.add('hidden');
+window.closeAboutOnBackdrop = e => { if(e.target.id==='about-modal') window.closeAboutModal(); };
+
 // ── Subscribe ──
 export function subscribePosts(){
   const q = query(collection(db,'posts'), orderBy('createdAt','desc'));
@@ -238,6 +261,7 @@ function openForm(title, p){
   $('pub-cat').value = p?.cat || 'flora';
   $('manual-coords-row').classList.add('hidden');
   renderFilePreviews();
+  window.updateCatHint();
   $('publish-modal').classList.remove('hidden');
   refreshIcons();
 }
