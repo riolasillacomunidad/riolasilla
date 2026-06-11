@@ -32,4 +32,4 @@ export const TELEGRAM_WORKER_URL = 'https://telegram-rio.riolasilla-comunidad.wo
 
 // Minutos de inactividad antes de cerrar sesión automáticamente.
 // Pon 0 para que la sesión nunca se cierre sola.
-export const SESSION_TIMEOUT_MIN = 30;
+export const SESSION_TIMEOUT_MIN = 0;
