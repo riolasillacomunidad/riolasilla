@@ -9,7 +9,7 @@ export const db   = getFirestore(app);
 
 export { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         updateProfile, sendEmailVerification }
+         updateProfile, sendEmailVerification, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 export { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp,

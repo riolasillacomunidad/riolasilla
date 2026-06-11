@@ -1,8 +1,9 @@
 import { auth, db, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut,
          onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         updateProfile, sendEmailVerification, doc, getDoc, setDoc } from './fb.js';
+         updateProfile, sendEmailVerification, sendPasswordResetEmail,
+         doc, getDoc, setDoc } from './fb.js';
 import { S, $, emit, refreshIcons, canModerate } from './state.js';
-import { ADMIN_UIDS } from './config.js';
+import { ADMIN_UIDS, SESSION_TIMEOUT_MIN } from './config.js';
 
 auth.languageCode = 'es'; // correos de verificación y recuperación en español
 
@@ -19,6 +20,7 @@ window.signInEmail = async () => {
   const email = $('login-email').value.trim();
   const pw = $('login-password').value;
   const err = $('login-error');
+  err.style.color = 'var(--red)';
   err.textContent = '';
   try {
     await signInWithEmailAndPassword(auth, email, pw);
@@ -57,6 +59,42 @@ function friendlyAuthError(e){
   if(c.includes('invalid-email')) return 'El correo no es válido.';
   return 'Error: ' + (e.message || c);
 }
+
+window.togglePw = (id, btn) => {
+  const inp = $(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}"></i>`;
+  refreshIcons();
+};
+
+window.resetPassword = async () => {
+  const email = $('login-email').value.trim();
+  const err = $('login-error');
+  err.style.color = 'var(--red)';
+  if(!email){
+    err.textContent = 'Escribe tu correo en el campo de arriba y vuelve a dar clic en "¿Olvidaste tu contraseña?".';
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    err.style.color = 'var(--green)';
+    err.textContent = '✓ Te enviamos un correo para restablecer tu contraseña. Si no lo ves, revisa SPAM.';
+  } catch(e){ err.textContent = friendlyAuthError(e); }
+};
+
+// ── Cierre de sesión por inactividad ──
+let inactivityTimer = null;
+function armInactivity(){
+  if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer = null; }
+  if(!S.user || !SESSION_TIMEOUT_MIN) return;
+  inactivityTimer = setTimeout(async () => {
+    await fbSignOut(auth);
+    alert(`Tu sesión se cerró automáticamente tras ${SESSION_TIMEOUT_MIN} minutos sin actividad. Puedes volver a entrar cuando quieras.`);
+  }, SESSION_TIMEOUT_MIN * 60 * 1000);
+}
+['pointerdown','keydown','touchstart','scroll'].forEach(ev =>
+  document.addEventListener(ev, armInactivity, { passive:true }));
 
 window.switchTab = tab => {
   $('auth-login-form').classList.toggle('hidden', tab==='register');
@@ -112,6 +150,7 @@ onAuthStateChanged(auth, async user => {
     $('btn-publish').classList.add('hidden');
     $('fab-publish').classList.add('hidden');
   }
+  armInactivity();
   emit('auth-changed');
   refreshIcons();
 });
