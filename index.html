@@ -184,14 +184,21 @@
     </div>
     <div id="auth-login-form">
       <input type="email" id="login-email" class="input" placeholder="Correo electrónico"/>
-      <input type="password" id="login-password" class="input" placeholder="Contraseña"/>
+      <div class="pw-wrap">
+        <input type="password" id="login-password" class="input" placeholder="Contraseña"/>
+        <button type="button" class="pw-toggle" onclick="togglePw('login-password', this)" title="Mostrar contraseña"><i data-lucide="eye"></i></button>
+      </div>
       <button onclick="signInEmail()" class="btn primary full">Entrar</button>
+      <button class="btn-link" style="margin-top:10px" onclick="resetPassword()">¿Olvidaste tu contraseña?</button>
       <p id="login-error" class="form-error"></p>
     </div>
     <div id="auth-register-form" class="hidden">
       <input type="text" id="reg-name" class="input" placeholder="Nombre completo"/>
       <input type="email" id="reg-email" class="input" placeholder="Correo electrónico"/>
-      <input type="password" id="reg-password" class="input" placeholder="Contraseña (mín. 6 caracteres)"/>
+      <div class="pw-wrap">
+        <input type="password" id="reg-password" class="input" placeholder="Contraseña (mín. 6 caracteres)"/>
+        <button type="button" class="pw-toggle" onclick="togglePw('reg-password', this)" title="Mostrar contraseña"><i data-lucide="eye"></i></button>
+      </div>
       <label class="terms-check">
         <input type="checkbox" id="terms-check"/>
         <span>Tengo 18 años o más y acepto los <a href="terminos.html" target="_blank">Términos de Uso</a></span>
