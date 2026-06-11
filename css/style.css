@@ -345,3 +345,41 @@ textarea.input { resize:vertical; }
   .detail-sheet.open .detail-body { transform:translate(-50%,-50%) scale(1); opacity:1; }
   .detail-grip { display:none; }
 }
+
+
+/* ── ABOUT + HINTS ── */
+.hide-mobile { display:none; }
+@media (min-width:768px){ .hide-mobile{ display:inline; } }
+.about-modal { width:560px; }
+.about-body { font-size:14px; line-height:1.7; color:var(--sub); }
+.about-body p { margin-bottom:10px; }
+.about-body h3 { font-size:15px; color:var(--ink); margin:16px 0 8px; font-weight:700; }
+.about-body a { color:var(--green); font-weight:600; }
+.about-list { padding-left:18px; margin-bottom:10px; }
+.about-list li { margin-bottom:8px; }
+.about-list b { color:var(--ink); }
+.cat-hint {
+  font-size:12.5px; color:var(--green-dark); background:var(--green-soft);
+  border-radius:var(--r-sm); padding:8px 12px; margin:-4px 0 10px; line-height:1.5;
+}
+
+
+/* ── GEOLOCATION ── */
+.locate-btn {
+  position:absolute; top:12px; right:12px; z-index:600;
+  width:42px; height:42px; border-radius:12px; border:none;
+  background:var(--card); box-shadow:var(--shadow); color:var(--sub);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:color .15s;
+}
+.locate-btn.active { color:#1971C2; }
+.user-dot {
+  width:16px; height:16px; border-radius:50%; background:#1971C2;
+  border:3px solid #fff; animation:pulseDot 2s infinite;
+}
+@keyframes pulseDot {
+  0%   { box-shadow:0 0 0 0 rgba(25,113,194,.35); }
+  70%  { box-shadow:0 0 0 12px rgba(25,113,194,0); }
+  100% { box-shadow:0 0 0 0 rgba(25,113,194,0); }
+}
+body.placing .locate-btn { display:none; }

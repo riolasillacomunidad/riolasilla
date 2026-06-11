@@ -86,3 +86,50 @@ function endPlacing(){
   $('placing-overlay').classList.add('hidden');
   document.body.classList.remove('placing');
 }
+
+
+// ── Geolocalización ──
+let watchId = null, userMarker = null, accCircle = null, lastPos = null, firstFix = false;
+
+const userIcon = () => L.divIcon({ className:'', html:'<div class="user-dot"></div>', iconSize:[18,18], iconAnchor:[9,9] });
+
+window.toggleMyLocation = () => {
+  if(!navigator.geolocation){ alert('Tu navegador no soporta geolocalización.'); return; }
+  if(watchId !== null){
+    if(lastPos) map.setView(lastPos, Math.max(map.getZoom(), 17));
+    return;
+  }
+  $('btn-locate').classList.add('active');
+  firstFix = false;
+  watchId = navigator.geolocation.watchPosition(pos => {
+    lastPos = [pos.coords.latitude, pos.coords.longitude];
+    if(!userMarker){
+      userMarker = L.marker(lastPos, { icon:userIcon(), zIndexOffset:900, interactive:false }).addTo(map);
+      accCircle = L.circle(lastPos, { radius:pos.coords.accuracy, color:'#1971C2', weight:1, fillColor:'#1971C2', fillOpacity:.12, interactive:false }).addTo(map);
+    } else {
+      userMarker.setLatLng(lastPos);
+      accCircle.setLatLng(lastPos).setRadius(pos.coords.accuracy);
+    }
+    if(!firstFix){ firstFix = true; map.setView(lastPos, 17); }
+  }, err => {
+    stopLocation();
+    alert(err.code===1
+      ? 'Permiso de ubicación denegado. Actívalo en la configuración de tu navegador.'
+      : 'No se pudo obtener tu ubicación.');
+  }, { enableHighAccuracy:true, maximumAge:5000, timeout:15000 });
+};
+
+function stopLocation(){
+  if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  const b = $('btn-locate'); if(b) b.classList.remove('active');
+}
+
+window.useMyLocation = () => {
+  if(lastPos){ map.setView(lastPos, 18); return; }
+  if(!navigator.geolocation){ alert('Tu navegador no soporta geolocalización.'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => map.setView([pos.coords.latitude, pos.coords.longitude], 18),
+    () => alert('No se pudo obtener tu ubicación. Verifica el permiso en tu navegador.'),
+    { enableHighAccuracy:true, timeout:15000 }
+  );
+};

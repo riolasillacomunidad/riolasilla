@@ -23,6 +23,9 @@
   </div>
 
   <div class="header-actions">
+    <button class="btn ghost sm" onclick="openAboutModal()" title="Conócenos">
+      <i data-lucide="sprout"></i><span class="hide-mobile">Conócenos</span>
+    </button>
     <button class="icon-btn mobile-only" onclick="toggleSearchBar()" title="Buscar"><i data-lucide="search"></i></button>
     <button id="btn-publish" class="btn primary hidden desktop-only" onclick="openPublishFlow()">
       <i data-lucide="map-pin"></i> Publicar punto
@@ -65,6 +68,9 @@
   <!-- MAP -->
   <main class="map-container">
     <div id="map"></div>
+    <button id="btn-locate" class="locate-btn" onclick="toggleMyLocation()" title="Mi ubicación">
+      <i data-lucide="locate-fixed"></i>
+    </button>
 
     <!-- Placing overlay -->
     <div id="placing-overlay" class="placing-overlay hidden">
@@ -72,6 +78,7 @@
       <div class="placing-bar">
         <span>Mueve el mapa para ubicar el punto</span>
         <div class="placing-btns">
+          <button class="btn ghost sm" onclick="useMyLocation()"><i data-lucide="locate-fixed"></i> Usar mi ubicación</button>
           <button class="btn ghost sm" onclick="cancelPlacing()">Cancelar</button>
           <button class="btn primary sm" onclick="confirmPlacing()">Confirmar ubicación</button>
         </div>
@@ -213,7 +220,7 @@
       <input type="text" id="manual-coords-input" class="input" placeholder="25.65600, -100.22600"/>
       <button class="btn ghost sm" onclick="applyManualCoords()">Aplicar</button>
     </div>
-    <select id="pub-cat" class="input">
+    <select id="pub-cat" class="input" onchange="updateCatHint()">
       <option value="arte">Arte y belleza</option>
       <option value="comunidad">Comunidad y convivencia</option>
       <option value="denuncia">Denuncia y reportes</option>
@@ -225,6 +232,7 @@
       <option value="mascotas">Mascotas</option>
       <option value="mobiliario">Mobiliario Urbano</option>
     </select>
+    <p id="cat-hint" class="cat-hint"></p>
     <textarea id="pub-text" class="input" rows="3" placeholder="Describe lo que observas…"></textarea>
     <p class="section-t" style="margin-bottom:6px">Adjuntos (opcional)</p>
     <div class="attach-row">
@@ -272,6 +280,34 @@
     <div id="mod-list" class="mod-list"></div>
     <p class="section-t" style="margin-top:18px">Respaldo</p>
     <button onclick="exportData()" class="btn ghost sm"><i data-lucide="download"></i> Exportar puntos (JSON)</button>
+  </div>
+</div>
+
+<!-- ABOUT MODAL -->
+<div id="about-modal" class="modal-overlay hidden" onclick="closeAboutOnBackdrop(event)">
+  <div class="modal about-modal">
+    <div class="modal-header">
+      <h2>Conócenos</h2>
+      <button class="icon-btn" onclick="closeAboutModal()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="about-body">
+      <p>Somos un grupo de ciudadanos comprometidos con la protección y el uso responsable del Río La Silla. Si vives cerca del río, eres estudiante, investigador, usuario habitual o simplemente alguien interesado en su bienestar, eres bienvenido a formar parte de nuestra comunidad.</p>
+      <p>El propósito de esta plataforma es documentar de manera colaborativa los lugares y elementos más relevantes para nuestra identidad. Nuestra prioridad es la calidad sobre la cantidad: una fotografía, un registro sonoro, la señalética del lugar o un documento informativo son piezas clave que nos permiten ampliar y preservar el conocimiento sobre este patrimonio natural.</p>
+      <h3>Cómo participar</h3>
+      <p>Para que nuestra plataforma siga siendo un espacio de calidad y enfocado en la conservación del Río La Silla, te invitamos a seguir estas pautas al momento de colaborar:</p>
+      <ul class="about-list">
+        <li><b>Enfoque en el Río:</b> Todo el contenido compartido debe centrarse exclusivamente en el río o en su entorno inmediato.</li>
+        <li><b>Contenido relevante:</b> Queremos mantener el sitio libre de ruido, por lo que no se admitirá spam ni temas ajenos al ecosistema y la comunidad del río.</li>
+        <li><b>Valores compartidos:</b> El respeto mutuo en las publicaciones y comentarios es innegociable. Construimos esta comunidad desde la cordialidad y la buena convivencia.</li>
+        <li><b>Aportaciones únicas:</b> Te animamos a publicar puntos de interés, fotos o documentos. Para que nuestra base de conocimiento sea eficiente, procura que tu aporte sea original y evite la repetición de información ya existente.</li>
+        <li><b>Precisión en la ubicación:</b> Para que los puntos de interés sean realmente útiles, te pedimos ser lo más preciso posible al indicar el lugar exacto del registro. Entre más exactos sean los datos geográficos, mejor podremos mapear la riqueza de nuestro río.</li>
+        <li><b>Calidad visual y sonora:</b> Aunque no buscamos perfección profesional, te agradecemos compartir archivos con buena claridad y, si es posible, acompañarlos con una breve descripción de lo que estamos viendo o escuchando.</li>
+        <li><b>Cita tus fuentes:</b> Si compartes información histórica, científica o técnica, asegúrate de mencionar de dónde proviene. Esto nos ayuda a construir un archivo confiable y veraz para todos.</li>
+      </ul>
+      <h3>¿Tienes dudas o quieres colaborar?</h3>
+      <p>Si tienes alguna duda, sugerencia o material que quieras compartir, escríbenos a <a href="mailto:riolasilla.comunidad@gmail.com">riolasilla.comunidad@gmail.com</a>.</p>
+      <p style="margin-top:10px"><a href="terminos.html" target="_blank">Términos de Uso y Privacidad</a></p>
+    </div>
   </div>
 </div>
 
