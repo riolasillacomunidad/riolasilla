@@ -25,3 +25,11 @@ export const CATS = {
 
 export const MAP_CENTER = [25.6560, -100.2260];
 export const SITE_URL = location.origin + location.pathname.replace(/index\.html$/,'');
+
+// URL del Worker de Telegram que anuncia puntos aprobados en el canal.
+// Déjala vacía ('') para desactivar la integración.
+export const TELEGRAM_WORKER_URL = 'https://telegram-rio.riolasilla-comunidad.workers.dev';
+
+// Minutos de inactividad antes de cerrar sesión automáticamente.
+// Pon 0 para que la sesión nunca se cierre sola.
+export const SESSION_TIMEOUT_MIN = 30;
