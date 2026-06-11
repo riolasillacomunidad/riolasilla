@@ -4,6 +4,8 @@ import { auth, db, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut,
 import { S, $, emit, refreshIcons, canModerate } from './state.js';
 import { ADMIN_UIDS } from './config.js';
 
+auth.languageCode = 'es'; // correos de verificación y recuperación en español
+
 const provider = new GoogleAuthProvider();
 
 window.signInGoogle = async () => {
@@ -43,7 +45,7 @@ window.registerEmail = async () => {
     await sendEmailVerification(cred.user);
     await fbSignOut(auth);
     err.style.color = 'var(--green)';
-    err.textContent = '✓ Cuenta creada. Revisa tu correo para verificarla.';
+    err.textContent = '✓ Cuenta creada. Te enviamos un correo de verificación — si no lo ves en tu bandeja, revisa la carpeta de SPAM o correo no deseado.';
   } catch(e){ err.textContent = friendlyAuthError(e); }
 };
 
