@@ -1,9 +1,12 @@
 import { db, collection, doc, updateDoc, deleteDoc, setDoc, getDocs, serverTimestamp } from './fb.js';
 import { S, $, refreshIcons } from './state.js';
+import { announceTelegram } from './posts.js';
 
 window.approvePost = async () => {
   if(!S.currentPostId) return;
-  await updateDoc(doc(db,'posts',S.currentPostId), { approved:true, active:true });
+  const id = S.currentPostId;
+  await updateDoc(doc(db,'posts',id), { approved:true, active:true });
+  announceTelegram(id);
 };
 
 window.toggleActive = async active => {

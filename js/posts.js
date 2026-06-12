@@ -147,6 +147,16 @@ async function renderDetail(p){
   $('d-btn-approve').classList.toggle('hidden', !canModerate() || p.approved);
   $('d-btn-deactivate').classList.toggle('hidden', !canModerate() || !p.approved || p.active===false);
   $('d-btn-activate').classList.toggle('hidden', !canModerate() || !p.approved || p.active!==false);
+  // Contactar autor por correo — solo admin/mods, y solo si hay correo (login con Google o correo)
+  const contactBtn = $('d-btn-contact');
+  if(canModerate() && p.userEmail){
+    const subject = encodeURIComponent('Río La Silla — sobre tu publicación');
+    const body = encodeURIComponent(`Hola ${p.userName||''},\n\nTe contactamos desde la moderación de la red comunitaria Parque Río La Silla en relación con tu publicación: "${(p.text||'').substring(0,80)}".\n\n`);
+    contactBtn.href = `mailto:${p.userEmail}?subject=${subject}&body=${body}`;
+    contactBtn.classList.remove('hidden');
+  } else {
+    contactBtn.classList.add('hidden');
+  }
 
   // Rating
   const avg = p.ratingAvg||0, count = p.ratingCount||0;
@@ -410,6 +420,7 @@ window.submitPost = async () => {
       const ref = await addDoc(collection(db,'posts'), {
         text, cat, lat:S.pendingLatLng.lat, lng:S.pendingLatLng.lng,
         uid:S.user.uid, userName:S.user.displayName, userPhoto:S.user.photoURL||'',
+        userEmail:S.user.email||'',
         createdAt:serverTimestamp(),
         approved:canModerate(), active:true,
         photoURL, audioURL, docURL,
