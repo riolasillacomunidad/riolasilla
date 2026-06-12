@@ -399,9 +399,11 @@ body.placing .locate-btn { display:none; }
 
 
 /* ── TELEGRAM + WELCOME ── */
-.tg-btn { background:#229ED9; color:#fff; }
-.tg-btn:hover { background:#1c87ba; color:#fff; }
+.tg-btn { background:#229ED9; color:#fff !important; text-decoration:none; }
+.tg-btn:hover { background:#1c87ba; color:#fff !important; }
 .tg-btn i { width:16px; height:16px; }
+a.btn { text-decoration:none; }
+a.btn:hover { text-decoration:none; }
 
 .welcome-banner {
   position:fixed; inset:0; z-index:2500;
