@@ -396,3 +396,32 @@ body.placing .locate-btn { display:none; }
 }
 .pw-toggle:hover { color:var(--ink); }
 .pw-toggle i { width:17px; height:17px; }
+
+
+/* ── TELEGRAM + WELCOME ── */
+.tg-btn { background:#229ED9; color:#fff; }
+.tg-btn:hover { background:#1c87ba; color:#fff; }
+.tg-btn i { width:16px; height:16px; }
+
+.welcome-banner {
+  position:fixed; inset:0; z-index:2500;
+  background:rgba(16,35,28,.45);
+  display:flex; align-items:center; justify-content:center; padding:18px;
+}
+.welcome-card {
+  position:relative; background:var(--card); border-radius:var(--r-lg);
+  width:380px; max-width:100%; padding:26px 22px; text-align:center;
+  box-shadow:var(--shadow-lg);
+}
+.welcome-x { position:absolute; top:10px; right:10px; }
+.welcome-mark {
+  width:54px; height:54px; border-radius:16px; margin:0 auto 14px;
+  background:linear-gradient(135deg, var(--green), #3DBE93);
+  display:flex; align-items:center; justify-content:center; color:#fff;
+}
+.welcome-mark i { width:28px; height:28px; }
+.welcome-card h2 { font-size:19px; font-weight:700; margin-bottom:8px; }
+.welcome-card p { font-size:14px; line-height:1.6; color:var(--sub); margin-bottom:16px; }
+
+/* Zoom abajo-izquierda; en móvil, despejar el atribución de Leaflet */
+.leaflet-bottom.leaflet-left { margin-bottom:4px; }
