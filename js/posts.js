@@ -1,8 +1,16 @@
 import { db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp,
          doc, updateDoc, deleteDoc, getDoc } from './fb.js';
 import { S, $, emit, timeAgo, refreshIcons, canModerate } from './state.js';
-import { CATS, CLOUDINARY, SITE_URL } from './config.js';
+import { CATS, CLOUDINARY, SITE_URL, TELEGRAM_WORKER_URL, TELEGRAM_CHANNEL_URL } from './config.js';
 import { map, startPlacing } from './map.js';
+
+export function announceTelegram(postId){
+  if(!TELEGRAM_WORKER_URL || !postId) return;
+  fetch(TELEGRAM_WORKER_URL, {
+    method:'POST', headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ postId })
+  }).catch(()=>{});
+}
 
 const CAT_HINTS = {
   arte:            'Describe la obra o expresión cultural: qué es, quién la hizo (si se sabe) y por qué vale la pena conocerla.',
@@ -26,6 +34,34 @@ window.updateCatHint = () => {
 window.openAboutModal = () => { $('about-modal').classList.remove('hidden'); refreshIcons(); };
 window.closeAboutModal = () => $('about-modal').classList.add('hidden');
 window.closeAboutOnBackdrop = e => { if(e.target.id==='about-modal') window.closeAboutModal(); };
+
+// Configurar enlaces de Telegram (o esconderlos si no hay canal)
+(function setupTelegramLinks(){
+  const url = TELEGRAM_CHANNEL_URL;
+  const ch = $('tg-channel-btn'), wl = $('welcome-tg');
+  if(url){
+    if(ch) ch.href = url;
+    if(wl) wl.href = url;
+  } else {
+    if(ch) ch.style.display = 'none';
+    if(wl) wl.style.display = 'none';
+  }
+})();
+
+// Banner de bienvenida (una sola vez por dispositivo)
+window.dismissWelcome = () => {
+  $('welcome-banner').classList.add('hidden');
+  try { localStorage.setItem('rls_welcomed','1'); } catch(e){}
+};
+window.openAboutFromWelcome = () => { window.dismissWelcome(); window.openAboutModal(); };
+(function maybeShowWelcome(){
+  let seen = false;
+  try { seen = localStorage.getItem('rls_welcomed') === '1'; } catch(e){}
+  if(!seen){
+    $('welcome-banner').classList.remove('hidden');
+    setTimeout(refreshIcons, 50);
+  }
+})();
 
 // ── Subscribe ──
 export function subscribePosts(){
@@ -371,7 +407,7 @@ window.submitPost = async () => {
       await updateDoc(doc(db,'posts',S.editingPostId),
         { text, cat, lat:S.pendingLatLng.lat, lng:S.pendingLatLng.lng, photoURL, audioURL, docURL });
     } else {
-      await addDoc(collection(db,'posts'), {
+      const ref = await addDoc(collection(db,'posts'), {
         text, cat, lat:S.pendingLatLng.lat, lng:S.pendingLatLng.lng,
         uid:S.user.uid, userName:S.user.displayName, userPhoto:S.user.photoURL||'',
         createdAt:serverTimestamp(),
@@ -379,7 +415,8 @@ window.submitPost = async () => {
         photoURL, audioURL, docURL,
         ratings:{}, ratingAvg:0, ratingCount:0, comments:[]
       });
-      if(!canModerate()) alert('✓ Publicación enviada. Aparecerá cuando sea aprobada.');
+      if(canModerate()) announceTelegram(ref.id); // los mods publican ya aprobado
+      else alert('✓ Publicación enviada. Aparecerá cuando sea aprobada.');
     }
     window.closePublishModal();
   } catch(e){ alert('Error: '+e.message); }

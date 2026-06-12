@@ -6,7 +6,7 @@ let placingCb = null;
 
 export function initMap(){
   map = L.map('map', { zoomControl:false }).setView(MAP_CENTER, 14);
-  L.control.zoom({ position:'bottomright' }).addTo(map);
+  L.control.zoom({ position:'bottomleft' }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom:19
   }).addTo(map);
