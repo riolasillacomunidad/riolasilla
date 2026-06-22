@@ -167,7 +167,7 @@ i[data-lucide], svg.lucide { width:18px; height:18px; stroke-width:2; }
   color:#E8590C; filter:drop-shadow(0 4px 6px rgba(0,0,0,.4));
   animation:pinBounce 1.6s ease-in-out infinite;
 }
-.center-pin i { width:64px; height:64px; fill:#E8590C; color:#fff; stroke-width:1.5; }
+.center-pin i { width:128px; height:64px; fill:#E8590C; color:#fff; stroke-width:1.5; }
 @keyframes pinBounce { 0%,100%{ transform:translate(-50%,-100%);} 50%{ transform:translate(-50%,-112%);} }
 .placing-bar {
   position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
