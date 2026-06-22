@@ -342,7 +342,83 @@ window.handleFile = type => {
   if(file.size > maxMB*1024*1024){ alert(`Máximo ${maxMB}MB.`); input.value=''; return; }
   S.fileData[type] = file;
   renderFilePreviews();
+  if(type === 'photo') tryReadPhotoGPS(file); // leer ubicación de la foto (opcional)
 };
+
+// Lee las coordenadas GPS del EXIF de una foto, ANTES de comprimirla.
+// Si las encuentra, ofrece colocar el punto ahí.
+async function tryReadPhotoGPS(file){
+  try {
+    const gps = await readExifGPS(file);
+    if(!gps) return;
+    const usar = confirm('Esta foto incluye la ubicación donde fue tomada.\n\n¿Quieres colocar el punto en esas coordenadas?');
+    if(usar){
+      S.pendingLatLng = { lat: gps.lat, lng: gps.lng };
+      $('pub-coords').textContent = `${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`;
+      if(typeof map !== 'undefined' && map) map.setView([gps.lat, gps.lng], 17);
+    }
+  } catch(e){ /* sin GPS o formato no legible: se ignora en silencio */ }
+}
+
+// Lector mínimo de GPS en EXIF de JPEG (sin librerías externas).
+function readExifGPS(file){
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const view = new DataView(e.target.result);
+        if(view.getUint16(0,false) !== 0xFFD8){ return resolve(null); } // no es JPEG
+        const len = view.byteLength; let offset = 2;
+        while(offset < len){
+          const marker = view.getUint16(offset, false); offset += 2;
+          if(marker === 0xFFE1){ // APP1 = EXIF
+            return resolve(parseExif(view, offset + 2));
+          } else if((marker & 0xFF00) !== 0xFF00){ break; }
+          else { offset += view.getUint16(offset, false); }
+        }
+        resolve(null);
+      } catch(err){ resolve(null); }
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsArrayBuffer(file.slice(0, 128*1024)); // basta el inicio del archivo
+  });
+}
+
+function parseExif(view, start){
+  if(view.getUint32(start, false) !== 0x45786966){ return null; } // "Exif"
+  const tiff = start + 6;
+  const little = view.getUint16(tiff, false) === 0x4949;
+  const get16 = o => view.getUint16(o, little);
+  const get32 = o => view.getUint32(o, little);
+  const ifd0 = tiff + get32(tiff + 4);
+  const tags = get16(ifd0);
+  let gpsIFD = null;
+  for(let i=0;i<tags;i++){
+    const entry = ifd0 + 2 + i*12;
+    if(get16(entry) === 0x8825){ gpsIFD = tiff + get32(entry + 8); break; }
+  }
+  if(!gpsIFD) return null;
+  const gpsTags = get16(gpsIFD);
+  let latRef, lngRef, lat, lng;
+  const readRational3 = valOff => {
+    const o = tiff + get32(valOff + 8);
+    const r = p => get32(p) / get32(p + 4);
+    return r(o) + r(o+8)/60 + r(o+16)/3600;
+  };
+  for(let i=0;i<gpsTags;i++){
+    const entry = gpsIFD + 2 + i*12;
+    const tag = get16(entry);
+    if(tag === 1) latRef = String.fromCharCode(view.getUint8(entry+8));
+    else if(tag === 2) lat = readRational3(entry);
+    else if(tag === 3) lngRef = String.fromCharCode(view.getUint8(entry+8));
+    else if(tag === 4) lng = readRational3(entry);
+  }
+  if(lat === undefined || lng === undefined) return null;
+  if(latRef === 'S') lat = -lat;
+  if(lngRef === 'W') lng = -lng;
+  if(isNaN(lat) || isNaN(lng) || (lat===0 && lng===0)) return null;
+  return { lat, lng };
+}
 
 function renderFilePreviews(){
   const div = $('file-previews');
