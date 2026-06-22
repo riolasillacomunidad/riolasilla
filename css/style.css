@@ -164,10 +164,10 @@ i[data-lucide], svg.lucide { width:18px; height:18px; stroke-width:2; }
 .placing-overlay { position:absolute; inset:0; z-index:650; pointer-events:none; }
 .center-pin {
   position:absolute; left:50%; top:50%; transform:translate(-50%, -100%);
-  color:var(--green); filter:drop-shadow(0 3px 4px rgba(0,0,0,.3));
+  color:#E8590C; filter:drop-shadow(0 4px 6px rgba(0,0,0,.4));
   animation:pinBounce 1.6s ease-in-out infinite;
 }
-.center-pin i { width:42px; height:42px; fill:var(--green); color:#fff; stroke-width:1.5; }
+.center-pin i { width:64px; height:64px; fill:#E8590C; color:#fff; stroke-width:1.5; }
 @keyframes pinBounce { 0%,100%{ transform:translate(-50%,-100%);} 50%{ transform:translate(-50%,-112%);} }
 .placing-bar {
   position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
