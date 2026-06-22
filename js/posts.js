@@ -360,32 +360,40 @@ async function tryReadPhotoGPS(file){
   } catch(e){ /* sin GPS o formato no legible: se ignora en silencio */ }
 }
 
-// Lector mínimo de GPS en EXIF de JPEG (sin librerías externas).
+// Lector de GPS en EXIF de JPEG (sin librerías externas).
 function readExifGPS(file){
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = e => {
       try {
         const view = new DataView(e.target.result);
-        if(view.getUint16(0,false) !== 0xFFD8){ return resolve(null); } // no es JPEG
+        if(view.getUint16(0,false) !== 0xFFD8){ console.log('[GPS] No es JPEG'); return resolve(null); }
         const len = view.byteLength; let offset = 2;
-        while(offset < len){
-          const marker = view.getUint16(offset, false); offset += 2;
-          if(marker === 0xFFE1){ // APP1 = EXIF
-            return resolve(parseExif(view, offset + 2));
-          } else if((marker & 0xFF00) !== 0xFF00){ break; }
-          else { offset += view.getUint16(offset, false); }
+        while(offset < len - 1){
+          const marker = view.getUint16(offset, false);
+          offset += 2;
+          if(marker === 0xFFE1){
+            const r = parseExif(view, offset + 2);
+            console.log('[GPS] APP1 encontrado, resultado:', r);
+            return resolve(r);
+          } else if((marker & 0xFF00) !== 0xFF00){
+            console.log('[GPS] Marcador inesperado, se detiene la búsqueda');
+            break;
+          } else {
+            offset += view.getUint16(offset, false);
+          }
         }
+        console.log('[GPS] No se encontró bloque EXIF (APP1)');
         resolve(null);
-      } catch(err){ resolve(null); }
+      } catch(err){ console.log('[GPS] Error al leer:', err); resolve(null); }
     };
-    reader.onerror = () => resolve(null);
-    reader.readAsArrayBuffer(file.slice(0, 128*1024)); // basta el inicio del archivo
+    reader.onerror = () => { console.log('[GPS] FileReader falló'); resolve(null); };
+    reader.readAsArrayBuffer(file); // archivo completo
   });
 }
 
 function parseExif(view, start){
-  if(view.getUint32(start, false) !== 0x45786966){ return null; } // "Exif"
+  if(view.getUint32(start, false) !== 0x45786966){ console.log('[GPS] No hay firma Exif'); return null; }
   const tiff = start + 6;
   const little = view.getUint16(tiff, false) === 0x4949;
   const get16 = o => view.getUint16(o, little);
@@ -397,12 +405,12 @@ function parseExif(view, start){
     const entry = ifd0 + 2 + i*12;
     if(get16(entry) === 0x8825){ gpsIFD = tiff + get32(entry + 8); break; }
   }
-  if(!gpsIFD) return null;
+  if(!gpsIFD){ console.log('[GPS] La foto no tiene sub-directorio GPS'); return null; }
   const gpsTags = get16(gpsIFD);
   let latRef, lngRef, lat, lng;
   const readRational3 = valOff => {
     const o = tiff + get32(valOff + 8);
-    const r = p => get32(p) / get32(p + 4);
+    const r = q => get32(q) / get32(q + 4);
     return r(o) + r(o+8)/60 + r(o+16)/3600;
   };
   for(let i=0;i<gpsTags;i++){
@@ -413,31 +421,12 @@ function parseExif(view, start){
     else if(tag === 3) lngRef = String.fromCharCode(view.getUint8(entry+8));
     else if(tag === 4) lng = readRational3(entry);
   }
-  if(lat === undefined || lng === undefined) return null;
+  if(lat === undefined || lng === undefined){ console.log('[GPS] Sin lat/lng en el directorio GPS'); return null; }
   if(latRef === 'S') lat = -lat;
   if(lngRef === 'W') lng = -lng;
-  if(isNaN(lat) || isNaN(lng) || (lat===0 && lng===0)) return null;
+  if(isNaN(lat) || isNaN(lng) || (lat===0 && lng===0)){ console.log('[GPS] Coordenadas inválidas'); return null; }
   return { lat, lng };
 }
-
-function renderFilePreviews(){
-  const div = $('file-previews');
-  const f = S.fileData, e = S.existingUrls;
-  let html='';
-  const item = (icon,label,clear) =>
-    `<span class="chip-file"><i data-lucide="${icon}" style="width:12px;height:12px"></i> ${label}
-     <button onclick="${clear}"><i data-lucide="x" style="width:12px;height:12px"></i></button></span>`;
-  if(f.photo) html += item('image', f.photo.name, "clearFile('photo')");
-  else if(e.photoURL) html += item('image','Foto actual',"clearExisting('photoURL')");
-  if(f.audio) html += item('music', f.audio.name, "clearFile('audio')");
-  else if(e.audioURL) html += item('music','Audio actual',"clearExisting('audioURL')");
-  if(f.doc) html += item('file-text', f.doc.name, "clearFile('doc')");
-  else if(e.docURL) html += item('file-text','Documento actual',"clearExisting('docURL')");
-  div.innerHTML = html;
-  refreshIcons();
-}
-window.clearFile = t => { S.fileData[t]=null; $(`file-${t}`).value=''; renderFilePreviews(); };
-window.clearExisting = k => { S.existingUrls[k]=null; renderFilePreviews(); };
 
 async function compressImage(file){
   if(!file.type.startsWith('image/')) return file;
