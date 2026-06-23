@@ -345,6 +345,42 @@ window.handleFile = type => {
   if(type === 'photo') tryReadPhotoGPS(file); // leer ubicación de la foto (opcional)
 };
 
+// Dibuja las miniaturas/etiquetas de los adjuntos seleccionados o existentes.
+function renderFilePreviews(){
+  const div = $('file-previews');
+  if(!div) return;
+  const f = S.fileData, e = S.existingUrls;
+  let html = '';
+  const chip = (icon, label, clearFn) =>
+    `<span class="chip-file"><i data-lucide="${icon}" style="width:13px;height:13px"></i> ${label}
+     <button type="button" onclick="${clearFn}"><i data-lucide="x" style="width:13px;height:13px"></i></button></span>`;
+  // Foto
+  if(f.photo) html += chip('image', f.photo.name, "clearFile('photo')");
+  else if(e.photoURL) html += chip('image', 'Foto actual', "clearExisting('photoURL')");
+  // Audio
+  if(f.audio) html += chip('music', f.audio.name, "clearFile('audio')");
+  else if(e.audioURL) html += chip('music', 'Audio actual', "clearExisting('audioURL')");
+  // Documento
+  if(f.doc) html += chip('file-text', f.doc.name, "clearFile('doc')");
+  else if(e.docURL) html += chip('file-text', 'Documento actual', "clearExisting('docURL')");
+  div.innerHTML = html;
+  refreshIcons();
+}
+
+// Quita un archivo recién seleccionado (aún no subido).
+window.clearFile = type => {
+  S.fileData[type] = null;
+  const input = $(`file-${type}`);
+  if(input) input.value = '';
+  renderFilePreviews();
+};
+
+// Quita un archivo que ya estaba guardado en el punto (al editar).
+window.clearExisting = key => {
+  S.existingUrls[key] = null;
+  renderFilePreviews();
+};
+
 // Lee las coordenadas GPS del EXIF de una foto, ANTES de comprimirla.
 // Si las encuentra, ofrece colocar el punto ahí.
 async function tryReadPhotoGPS(file){
