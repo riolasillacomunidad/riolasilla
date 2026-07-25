@@ -336,6 +336,14 @@
   </div>
 </div>
 
+<!-- NOTICE MODAL (avisos con hipervínculo) -->
+<div id="notice-modal" class="modal-overlay hidden" onclick="closeNoticeOnBackdrop(event)">
+  <div class="modal notice-modal">
+    <p id="notice-text" class="notice-text"></p>
+    <button class="btn primary full" onclick="closeNotice()">Entendido</button>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
