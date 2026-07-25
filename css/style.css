@@ -435,3 +435,9 @@ a.btn:hover { text-decoration:none; }
   display:flex; align-items:center; gap:5px;
 }
 .author-email a { color:var(--green); font-weight:600; }
+
+
+/* ── NOTICE MODAL ── */
+.notice-modal { width:380px; text-align:center; }
+.notice-text { font-size:14px; line-height:1.6; color:var(--ink); margin-bottom:16px; }
+.notice-text a { color:var(--green); font-weight:600; }
