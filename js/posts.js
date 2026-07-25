@@ -339,7 +339,14 @@ window.handleFile = type => {
   const input = $(`file-${type}`);
   const file = input.files[0]; if(!file) return;
   const maxMB = { photo:5, audio:10, doc:5 }[type];
-  if(file.size > maxMB*1024*1024){ alert(`Máximo ${maxMB}MB.`); input.value=''; return; }
+  if(file.size > maxMB*1024*1024){
+    const extra = type === 'photo'
+      ? '\n\nPuedes comprimir tus fotos aquí: https://comprimir-fotos.web.app'
+      : '';
+    alert(`Máximo ${maxMB}MB.${extra}`);
+    input.value = '';
+    return;
+  }
   S.fileData[type] = file;
   renderFilePreviews();
   if(type === 'photo') tryReadPhotoGPS(file); // leer ubicación de la foto (opcional)
