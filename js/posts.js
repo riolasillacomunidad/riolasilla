@@ -340,10 +340,10 @@ window.handleFile = type => {
   const file = input.files[0]; if(!file) return;
   const maxMB = { photo:5, audio:10, doc:5 }[type];
   if(file.size > maxMB*1024*1024){
-    const extra = type === 'photo'
-      ? '\n\nPuedes comprimir tus fotos aquí: https://comprimir-fotos.web.app'
+    const extraHTML = type === 'photo'
+      ? '<br><br>Puedes comprimir tus fotos aquí: <a href="https://comprimir-fotos.web.app" target="_blank" rel="noopener">comprimir-fotos.web.app</a>'
       : '';
-    alert(`Máximo ${maxMB}MB.${extra}`);
+    showNotice(`El archivo supera el máximo de ${maxMB}MB.${extraHTML}`);
     input.value = '';
     return;
   }
@@ -545,3 +545,13 @@ window.deletePost = async () => {
   await deleteDoc(doc(db,'posts',S.currentPostId));
   window.closeDetail();
 };
+
+
+// Aviso simple con soporte de HTML (para poder incluir hipervínculos, algo
+// que el alert() nativo del navegador no permite).
+window.showNotice = (html) => {
+  $('notice-text').innerHTML = html;
+  $('notice-modal').classList.remove('hidden');
+};
+window.closeNotice = () => $('notice-modal').classList.add('hidden');
+window.closeNoticeOnBackdrop = e => { if(e.target.id==='notice-modal') window.closeNotice(); };
